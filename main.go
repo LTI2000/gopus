@@ -19,8 +19,14 @@ import (
 // ANSI color codes for terminal output
 const (
 	colorReset = "\033[0m"
-	colorDim   = "\033[2m"  // Dim/faint text for loaded messages
-	colorCyan  = "\033[36m" // Cyan for loaded message labels
+
+	// Bright colors for new messages
+	colorGreen = "\033[32m" // Green for user messages
+	colorBlue  = "\033[34m" // Blue for assistant messages
+
+	// Dim colors for loaded/historical messages
+	colorDimGreen = "\033[2;32m" // Dim green for loaded user messages
+	colorDimBlue  = "\033[2;34m" // Dim blue for loaded assistant messages
 )
 
 func main() {
@@ -78,7 +84,7 @@ func main() {
 
 	// Main chat loop
 	for {
-		fmt.Print("You: ")
+		fmt.Printf("%sYou:%s ", colorGreen, colorReset)
 
 		// Read user input
 		if !scanner.Scan() {
@@ -162,7 +168,7 @@ func main() {
 		}
 
 		assistantMessage := *assistantContent
-		fmt.Printf("Assistant: %s\n\n", assistantMessage)
+		fmt.Printf("%sAssistant:%s %s\n\n", colorBlue, colorReset, assistantMessage)
 
 		// Add assistant response to history manager (auto-saves)
 		if err := historyManager.AddMessage("assistant", assistantMessage); err != nil {
@@ -242,20 +248,20 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 		manager.SetCurrent(selectedSession)
 		fmt.Printf("Continuing session: %s\n", selectedSession.Name)
 
-		// Display loaded messages in dim color to distinguish from new messages
+		// Display loaded messages in dim colors to distinguish from new messages
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				role := "You"
-				if msg.Role == "assistant" {
-					role = "Assistant"
-				}
 				// Truncate long messages for display if configured
 				content := msg.Content
 				if truncateDisplay > 0 && len(content) > truncateDisplay {
 					content = content[:truncateDisplay] + "..."
 				}
-				fmt.Printf("%s%s:%s %s%s%s\n", colorCyan, role, colorReset, colorDim, content, colorReset)
+				if msg.Role == "assistant" {
+					fmt.Printf("%sAssistant: %s%s\n", colorDimBlue, content, colorReset)
+				} else {
+					fmt.Printf("%sYou: %s%s\n", colorDimGreen, content, colorReset)
+				}
 			}
 			fmt.Println()
 		}
@@ -368,15 +374,15 @@ func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanne
 		selectedSession := sessions[num-1]
 		manager.SetCurrent(selectedSession)
 		fmt.Printf("Switched to session: %s\n", selectedSession.Name)
-		// Display loaded messages in dim color to distinguish from new messages
+		// Display loaded messages in dim colors to distinguish from new messages
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				role := "You"
 				if msg.Role == "assistant" {
-					role = "Assistant"
+					fmt.Printf("%sAssistant: %s%s\n", colorDimBlue, msg.Content, colorReset)
+				} else {
+					fmt.Printf("%sYou: %s%s\n", colorDimGreen, msg.Content, colorReset)
 				}
-				fmt.Printf("%s%s:%s %s%s%s\n", colorCyan, role, colorReset, colorDim, msg.Content, colorReset)
 			}
 			fmt.Println()
 		}
