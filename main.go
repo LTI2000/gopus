@@ -16,6 +16,13 @@ import (
 	"gopus/internal/openai"
 )
 
+// ANSI color codes for terminal output
+const (
+	colorReset = "\033[0m"
+	colorDim   = "\033[2m"  // Dim/faint text for loaded messages
+	colorCyan  = "\033[36m" // Cyan for loaded message labels
+)
+
 func main() {
 	// Set up signal handling for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -235,15 +242,10 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 		manager.SetCurrent(selectedSession)
 		fmt.Printf("Continuing session: %s\n", selectedSession.Name)
 
-		// Display recent messages from the session
+		// Display loaded messages in dim color to distinguish from new messages
 		if len(selectedSession.Messages) > 0 {
-			fmt.Println("\n--- Recent messages ---")
-			start := 0
-			if len(selectedSession.Messages) > 6 {
-				start = len(selectedSession.Messages) - 6
-				fmt.Printf("... (%d earlier messages)\n", start)
-			}
-			for _, msg := range selectedSession.Messages[start:] {
+			fmt.Println()
+			for _, msg := range selectedSession.Messages {
 				role := "You"
 				if msg.Role == "assistant" {
 					role = "Assistant"
@@ -253,10 +255,9 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 				if truncateDisplay > 0 && len(content) > truncateDisplay {
 					content = content[:truncateDisplay] + "..."
 				}
-				fmt.Printf("%s: %s\n", role, content)
+				fmt.Printf("%s%s:%s %s%s%s\n", colorCyan, role, colorReset, colorDim, content, colorReset)
 			}
-			fmt.Println("--- End of history ---")
-			fmt.Printf("\n(Loaded %d messages from history - the AI will have full context)\n", len(selectedSession.Messages))
+			fmt.Println()
 		}
 
 		return nil
@@ -364,12 +365,22 @@ func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanne
 			fmt.Println("Invalid selection.")
 			return true, nil
 		}
-		manager.SetCurrent(sessions[num-1])
-		fmt.Printf("Switched to session: %s\n", sessions[num-1].Name)
-		if len(sessions[num-1].Messages) > 0 {
-			fmt.Printf("(Loaded %d messages from history - the AI will have full context)\n", len(sessions[num-1].Messages))
+		selectedSession := sessions[num-1]
+		manager.SetCurrent(selectedSession)
+		fmt.Printf("Switched to session: %s\n", selectedSession.Name)
+		// Display loaded messages in dim color to distinguish from new messages
+		if len(selectedSession.Messages) > 0 {
+			fmt.Println()
+			for _, msg := range selectedSession.Messages {
+				role := "You"
+				if msg.Role == "assistant" {
+					role = "Assistant"
+				}
+				fmt.Printf("%s%s:%s %s%s%s\n", colorCyan, role, colorReset, colorDim, msg.Content, colorReset)
+			}
+			fmt.Println()
 		}
-		return true, loadChatHistory(sessions[num-1])
+		return true, loadChatHistory(selectedSession)
 
 	case "/rename":
 		if len(parts) < 2 {
