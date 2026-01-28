@@ -141,6 +141,24 @@ Select a session (0 for new, or number):
 
 Sessions are automatically named based on the first message you send. You can rename them anytime with `/rename`.
 
+### Continuing Sessions
+
+When you select an existing session, the full conversation history is loaded and sent to the AI with each request. This means the AI has complete context of your previous conversation and can continue naturally from where you left off.
+
+```
+Continuing session: Explain Go interfaces
+
+--- Recent messages ---
+... (6 earlier messages)
+You: What about empty interfaces?
+Assistant: An empty interface `interface{}` has no methods...
+--- End of history ---
+
+(Loaded 12 messages from history - the AI will have full context)
+
+Connected to OpenAI (model: gpt-3.5-turbo).
+```
+
 ## Project Structure
 
 ```

@@ -256,6 +256,7 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 				fmt.Printf("%s: %s\n", role, content)
 			}
 			fmt.Println("--- End of history ---")
+			fmt.Printf("\n(Loaded %d messages from history - the AI will have full context)\n", len(selectedSession.Messages))
 		}
 
 		return nil
@@ -365,6 +366,9 @@ func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanne
 		}
 		manager.SetCurrent(sessions[num-1])
 		fmt.Printf("Switched to session: %s\n", sessions[num-1].Name)
+		if len(sessions[num-1].Messages) > 0 {
+			fmt.Printf("(Loaded %d messages from history - the AI will have full context)\n", len(sessions[num-1].Messages))
+		}
 		return true, loadChatHistory(sessions[num-1])
 
 	case "/rename":
