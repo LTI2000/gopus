@@ -39,11 +39,15 @@ func main() {
 	}
 
 	// Create OpenAI client
-	client := openai.NewClient(cfg)
+	client, err := openai.NewChatClient(cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating client: %v\n", err)
+		os.Exit(1)
+	}
 	fmt.Printf("Connected to OpenAI (model: %s). Type 'quit' or 'exit' to end the conversation.\n\n", cfg.OpenAI.Model)
 
 	// Initialize conversation history
-	var history []openai.Message
+	var history []openai.ChatCompletionRequestMessage
 
 	// Create scanner for reading user input
 	scanner := bufio.NewScanner(os.Stdin)
@@ -73,8 +77,8 @@ func main() {
 		}
 
 		// Add user message to history
-		history = append(history, openai.Message{
-			Role:    "user",
+		history = append(history, openai.ChatCompletionRequestMessage{
+			Role:    openai.RoleUser,
 			Content: input,
 		})
 
@@ -94,12 +98,19 @@ func main() {
 			continue
 		}
 
-		assistantMessage := resp.Choices[0].Message.Content
+		assistantContent := resp.Choices[0].Message.Content
+		if assistantContent == nil {
+			fmt.Fprintln(os.Stderr, "Error: Empty response from API")
+			history = history[:len(history)-1]
+			continue
+		}
+
+		assistantMessage := *assistantContent
 		fmt.Printf("Assistant: %s\n\n", assistantMessage)
 
 		// Add assistant response to history
-		history = append(history, openai.Message{
-			Role:    "assistant",
+		history = append(history, openai.ChatCompletionRequestMessage{
+			Role:    openai.RoleAssistant,
 			Content: assistantMessage,
 		})
 	}

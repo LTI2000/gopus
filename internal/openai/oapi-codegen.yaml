@@ -1,0 +1,15 @@
+# oapi-codegen configuration file
+# Run: go generate ./internal/openai/...
+
+package: openai
+output: generated.go
+generate:
+  # Generate the client interface and implementation
+  client: true
+  # Generate model types from schemas
+  models: true
+  # Don't embed the spec in the generated code
+  embedded-spec: false
+output-options:
+  # Don't skip unused schemas
+  skip-prune: false

@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: OpenAI API - Chat Completions
+  version: 1.0.0
+  description: |
+    Minimal OpenAI API specification for chat completions endpoint.
+    Based on the official OpenAI OpenAPI specification.
+
+servers:
+  - url: https://api.openai.com/v1
+    description: OpenAI API
+
+paths:
+  /chat/completions:
+    post:
+      operationId: createChatCompletion
+      summary: Creates a model response for the given chat conversation
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatCompletionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: OpenAI API key
+
+  schemas:
+    CreateChatCompletionRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          description: ID of the model to use (e.g., gpt-4, gpt-3.5-turbo)
+          example: gpt-4
+        messages:
+          type: array
+          description: A list of messages comprising the conversation so far
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ChatCompletionRequestMessage'
+        max_tokens:
+          type: integer
+          description: The maximum number of tokens to generate in the chat completion
+          nullable: true
+        temperature:
+          type: number
+          format: float
+          description: Sampling temperature between 0 and 2
+          minimum: 0
+          maximum: 2
+          default: 1
+          nullable: true
+        top_p:
+          type: number
+          format: float
+          description: Nucleus sampling parameter
+          minimum: 0
+          maximum: 1
+          default: 1
+          nullable: true
+        n:
+          type: integer
+          description: How many chat completion choices to generate
+          minimum: 1
+          maximum: 128
+          default: 1
+          nullable: true
+        stop:
+          description: Up to 4 sequences where the API will stop generating
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+              minItems: 1
+              maxItems: 4
+          nullable: true
+        presence_penalty:
+          type: number
+          format: float
+          description: Presence penalty between -2.0 and 2.0
+          minimum: -2
+          maximum: 2
+          default: 0
+          nullable: true
+        frequency_penalty:
+          type: number
+          format: float
+          description: Frequency penalty between -2.0 and 2.0
+          minimum: -2
+          maximum: 2
+          default: 0
+          nullable: true
+        user:
+          type: string
+          description: A unique identifier representing your end-user
+          nullable: true
+
+    ChatCompletionRequestMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - user
+            - assistant
+          description: The role of the message author
+        content:
+          type: string
+          description: The contents of the message
+        name:
+          type: string
+          description: An optional name for the participant
+          nullable: true
+
+    ChatCompletionResponse:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - model
+        - choices
+      properties:
+        id:
+          type: string
+          description: A unique identifier for the chat completion
+        object:
+          type: string
+          description: The object type, which is always "chat.completion"
+          enum:
+            - chat.completion
+        created:
+          type: integer
+          description: The Unix timestamp of when the chat completion was created
+        model:
+          type: string
+          description: The model used for the chat completion
+        choices:
+          type: array
+          description: A list of chat completion choices
+          items:
+            $ref: '#/components/schemas/ChatCompletionChoice'
+        usage:
+          $ref: '#/components/schemas/CompletionUsage'
+        system_fingerprint:
+          type: string
+          description: Fingerprint representing the backend configuration
+          nullable: true
+
+    ChatCompletionChoice:
+      type: object
+      required:
+        - index
+        - message
+        - finish_reason
+      properties:
+        index:
+          type: integer
+          description: The index of the choice in the list
+        message:
+          $ref: '#/components/schemas/ChatCompletionResponseMessage'
+        finish_reason:
+          type: string
+          description: The reason the model stopped generating tokens
+          enum:
+            - stop
+            - length
+            - content_filter
+            - tool_calls
+            - function_call
+          nullable: true
+
+    ChatCompletionResponseMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - assistant
+          description: The role of the author of this message
+        content:
+          type: string
+          description: The contents of the message
+          nullable: true
+
+    CompletionUsage:
+      type: object
+      required:
+        - prompt_tokens
+        - completion_tokens
+        - total_tokens
+      properties:
+        prompt_tokens:
+          type: integer
+          description: Number of tokens in the prompt
+        completion_tokens:
+          type: integer
+          description: Number of tokens in the generated completion
+        total_tokens:
+          type: integer
+          description: Total number of tokens used in the request
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/APIError'
+
+    APIError:
+      type: object
+      required:
+        - message
+        - type
+      properties:
+        message:
+          type: string
+          description: A human-readable error message
+        type:
+          type: string
+          description: The type of error
+        param:
+          type: string
+          description: The parameter that caused the error
+          nullable: true
+        code:
+          type: string
+          description: An error code identifying the error type
+          nullable: true

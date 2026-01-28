@@ -1,93 +1,104 @@
+// Package openai provides a client for the OpenAI Chat Completions API.
 package openai
 
+//go:generate go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen --config=oapi-codegen.yaml openapi.yaml
+
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"gopus/internal/config"
 )
 
-// Client is an HTTP client for the OpenAI API.
-type Client struct {
-	apiKey      string
-	baseURL     string
+// ChatClient wraps the generated OpenAI client with configuration defaults.
+type ChatClient struct {
+	client      *ClientWithResponses
 	model       string
 	maxTokens   int
-	temperature float64
-	httpClient  *http.Client
+	temperature float32
 }
 
-// NewClient creates a new OpenAI API client from the provided configuration.
-func NewClient(cfg *config.Config) *Client {
-	return &Client{
-		apiKey:      cfg.OpenAI.APIKey,
-		baseURL:     cfg.OpenAI.BaseURL,
+// NewChatClient creates a new OpenAI chat client from the provided configuration.
+func NewChatClient(cfg *config.Config) (*ChatClient, error) {
+	// Create HTTP client with timeout
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
+	// Create request editor to add authorization header
+	authEditor := WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", "Bearer "+cfg.OpenAI.APIKey)
+		return nil
+	})
+
+	// Create the generated client
+	client, err := NewClientWithResponses(
+		cfg.OpenAI.BaseURL,
+		WithHTTPClient(httpClient),
+		authEditor,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OpenAI client: %w", err)
+	}
+
+	return &ChatClient{
+		client:      client,
 		model:       cfg.OpenAI.Model,
 		maxTokens:   cfg.OpenAI.MaxTokens,
-		temperature: cfg.OpenAI.Temperature,
-		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
-		},
-	}
+		temperature: float32(cfg.OpenAI.Temperature),
+	}, nil
 }
 
+// RoleUser is the role constant for user messages.
+const RoleUser = ChatCompletionRequestMessageRoleUser
+
+// RoleAssistant is the role constant for assistant messages.
+const RoleAssistant = ChatCompletionRequestMessageRoleAssistant
+
+// RoleSystem is the role constant for system messages.
+const RoleSystem = ChatCompletionRequestMessageRoleSystem
+
 // ChatCompletion sends a chat completion request to the OpenAI API.
-func (c *Client) ChatCompletion(ctx context.Context, messages []Message) (*ChatResponse, error) {
-	req := ChatRequest{
+func (c *ChatClient) ChatCompletion(ctx context.Context, messages []ChatCompletionRequestMessage) (*ChatCompletionResponse, error) {
+	// Build the request
+	req := CreateChatCompletionRequest{
 		Model:       c.model,
 		Messages:    messages,
-		MaxTokens:   c.maxTokens,
-		Temperature: c.temperature,
+		MaxTokens:   &c.maxTokens,
+		Temperature: &c.temperature,
 	}
 
-	reqBody, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	url := c.baseURL + "/chat/completions"
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
-
-	resp, err := c.httpClient.Do(httpReq)
+	// Send the request using the generated client
+	resp, err := c.client.CreateChatCompletionWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+	// Handle error responses
+	if resp.JSON400 != nil {
+		return nil, &resp.JSON400.Error
+	}
+	if resp.JSON401 != nil {
+		return nil, &resp.JSON401.Error
+	}
+	if resp.JSON429 != nil {
+		return nil, &resp.JSON429.Error
+	}
+	if resp.JSON500 != nil {
+		return nil, &resp.JSON500.Error
 	}
 
-	// Check for HTTP errors
-	if resp.StatusCode != http.StatusOK {
-		var errResp ErrorResponse
-		if err := json.Unmarshal(body, &errResp); err != nil {
-			return nil, fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
-		}
-		return nil, &errResp.Error
+	// Check for successful response
+	if resp.JSON200 == nil {
+		return nil, fmt.Errorf("unexpected response status: %s", resp.Status())
 	}
 
-	var chatResp ChatResponse
-	if err := json.Unmarshal(body, &chatResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
+	return resp.JSON200, nil
+}
 
-	// Check for API-level errors in the response
-	if chatResp.Error != nil {
-		return nil, chatResp.Error
-	}
-
-	return &chatResp, nil
+// Error implements the error interface for APIError.
+func (e *APIError) Error() string {
+	return e.Message
 }
