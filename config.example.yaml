@@ -16,3 +16,8 @@ openai:
   
   # Base URL for API requests (optional, for proxies or alternative endpoints)
   # base_url: "https://api.openai.com/v1"
+
+# Chat history settings (optional)
+history:
+  # Directory to store chat sessions (optional, default: ~/.gopus/sessions/)
+  # sessions_dir: "/path/to/custom/sessions"

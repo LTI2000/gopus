@@ -5,6 +5,7 @@ A simple command-line chat application that uses the OpenAI Chat Completions API
 ## Features
 
 - Interactive chat loop with conversation history
+- **Persistent chat history with multiple session support**
 - Configuration file-based API key management
 - Supports all OpenAI chat models (GPT-3.5, GPT-4, etc.)
 - Configurable temperature and max tokens
@@ -51,13 +52,21 @@ A simple command-line chat application that uses the OpenAI Chat Completions API
 
 ### Configuration Options
 
+#### OpenAI Settings
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `api_key` | Your OpenAI API key (required) | - |
-| `model` | The model to use for completions | `gpt-3.5-turbo` |
-| `max_tokens` | Maximum tokens in the response | `1000` |
-| `temperature` | Response randomness (0.0-2.0) | `0.7` |
-| `base_url` | API base URL (for proxies) | `https://api.openai.com/v1` |
+| `openai.api_key` | Your OpenAI API key (required) | - |
+| `openai.model` | The model to use for completions | `gpt-3.5-turbo` |
+| `openai.max_tokens` | Maximum tokens in the response | `1000` |
+| `openai.temperature` | Response randomness (0.0-2.0) | `0.7` |
+| `openai.base_url` | API base URL (for proxies) | `https://api.openai.com/v1` |
+
+#### History Settings
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `history.sessions_dir` | Directory to store chat sessions | `~/.gopus/sessions/` |
 
 ## Usage
 
@@ -98,9 +107,38 @@ Goodbye!
 
 ### Commands
 
+#### Chat Commands
 - Type your message and press Enter to send
 - Type `quit` or `exit` to end the conversation
 - Press `Ctrl+C` for immediate shutdown
+
+#### Session Commands
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/new` | Start a new session |
+| `/list` | List all saved sessions |
+| `/switch` | Switch to a different session |
+| `/rename <name>` | Rename the current session |
+| `/delete` | Delete the current session |
+| `/info` | Show current session info |
+
+### Session Management
+
+Chat history is automatically saved after each message exchange. Sessions are stored as JSON files in `~/.gopus/sessions/` (or a custom directory if configured).
+
+At startup, you'll see a list of existing sessions:
+
+```
+=== Available Sessions ===
+  0. Start a new session
+  1. Hello! What can you help me with? (4 messages, last updated: 2026-01-28 21:15)
+  2. Explain Go interfaces (12 messages, last updated: 2026-01-27 14:30)
+
+Select a session (0 for new, or number):
+```
+
+Sessions are automatically named based on the first message you send. You can rename them anytime with `/rename`.
 
 ## Project Structure
 
@@ -116,6 +154,9 @@ gopus/
 ├── internal/
 │   ├── config/
 │   │   └── config.go           # Configuration loading
+│   ├── history/
+│   │   ├── history.go          # Session management and types
+│   │   └── storage.go          # JSON file operations
 │   └── openai/
 │       ├── openapi.yaml        # OpenAPI 3 specification
 │       ├── oapi-codegen.yaml   # Code generation configuration
@@ -171,6 +212,7 @@ The OpenAPI spec (`internal/openai/openapi.yaml`) defines the chat completions e
 | Package | Purpose |
 |---------|---------|
 | `gopkg.in/yaml.v3` | YAML configuration parsing |
+| `github.com/google/uuid` | UUID generation for session IDs |
 | `github.com/oapi-codegen/runtime` | Runtime support for generated client |
 | `github.com/oapi-codegen/oapi-codegen/v2` | Code generation tool (dev only) |
 

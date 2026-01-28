@@ -11,7 +11,13 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	OpenAI OpenAIConfig `yaml:"openai"`
+	OpenAI  OpenAIConfig  `yaml:"openai"`
+	History HistoryConfig `yaml:"history"`
+}
+
+// HistoryConfig contains chat history settings.
+type HistoryConfig struct {
+	SessionsDir string `yaml:"sessions_dir"`
 }
 
 // OpenAIConfig contains OpenAI API settings.
