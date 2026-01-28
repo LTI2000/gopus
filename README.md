@@ -67,6 +67,7 @@ A simple command-line chat application that uses the OpenAI Chat Completions API
 | Option | Description | Default |
 |--------|-------------|---------|
 | `history.sessions_dir` | Directory to store chat sessions | `~/.gopus/sessions/` |
+| `history.truncate_display` | Max chars per message when displaying history (0 = no truncation) | `0` |
 
 ## Usage
 

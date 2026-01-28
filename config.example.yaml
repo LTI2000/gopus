@@ -21,3 +21,7 @@ openai:
 history:
   # Directory to store chat sessions (optional, default: ~/.gopus/sessions/)
   # sessions_dir: "/path/to/custom/sessions"
+  
+  # Truncate message display when loading session history (optional, default: 0 = no truncation)
+  # Set to a positive number to limit displayed characters per message
+  # truncate_display: 100

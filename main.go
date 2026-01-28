@@ -58,7 +58,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// Session selection at startup
-	if err := selectSession(historyManager, scanner); err != nil {
+	if err := selectSession(historyManager, scanner, cfg.History.TruncateDisplay); err != nil {
 		fmt.Fprintf(os.Stderr, "Error selecting session: %v\n", err)
 		os.Exit(1)
 	}
@@ -177,7 +177,8 @@ func main() {
 }
 
 // selectSession displays available sessions and lets the user choose one or create a new one.
-func selectSession(manager *history.Manager, scanner *bufio.Scanner) error {
+// truncateDisplay controls message truncation: 0 = no truncation, >0 = max characters.
+func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDisplay int) error {
 	sessions, err := manager.ListSessions()
 	if err != nil {
 		return err
@@ -247,10 +248,10 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner) error {
 				if msg.Role == "assistant" {
 					role = "Assistant"
 				}
-				// Truncate long messages for display
+				// Truncate long messages for display if configured
 				content := msg.Content
-				if len(content) > 100 {
-					content = content[:100] + "..."
+				if truncateDisplay > 0 && len(content) > truncateDisplay {
+					content = content[:truncateDisplay] + "..."
 				}
 				fmt.Printf("%s: %s\n", role, content)
 			}
