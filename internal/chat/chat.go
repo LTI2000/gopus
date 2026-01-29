@@ -16,8 +16,10 @@ import (
 
 // RunLoop runs the main chat loop, reading user input and sending requests to OpenAI.
 func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatClient, historyManager *history.Manager) {
-	// Load existing messages into OpenAI format
-	chatHistory := history.ConvertSessionMessages(historyManager.Current())
+	// Use session messages directly (they are already openai.ChatCompletionRequestMessage)
+	session := historyManager.Current()
+	chatHistory := make([]openai.ChatCompletionRequestMessage, len(session.Messages))
+	copy(chatHistory, session.Messages)
 
 	for {
 		fmt.Printf("%suser:%s ", printer.ColorGreen, printer.ColorReset)

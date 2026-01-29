@@ -14,19 +14,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// Message represents a single chat message in a session.
-type Message struct {
-	Role    openai.ChatCompletionRequestMessageRole `json:"role"`
-	Content string                                  `json:"content"`
-}
-
 // Session represents a chat session with its history.
 type Session struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Messages  []Message `json:"messages"`
+	ID        string                                `json:"id"`
+	Name      string                                `json:"name"`
+	CreatedAt time.Time                             `json:"created_at"`
+	UpdatedAt time.Time                             `json:"updated_at"`
+	Messages  []openai.ChatCompletionRequestMessage `json:"messages"`
 }
 
 // Manager handles session lifecycle and persistence.
@@ -73,7 +67,7 @@ func (m *Manager) NewSession() *Session {
 		Name:      "", // Will be set from first message
 		CreatedAt: now,
 		UpdatedAt: now,
-		Messages:  []Message{},
+		Messages:  []openai.ChatCompletionRequestMessage{},
 	}
 	m.current = session
 	return session
@@ -169,7 +163,7 @@ func (m *Manager) AddMessage(role openai.ChatCompletionRequestMessageRole, conte
 		return fmt.Errorf("no current session")
 	}
 
-	m.current.Messages = append(m.current.Messages, Message{
+	m.current.Messages = append(m.current.Messages, openai.ChatCompletionRequestMessage{
 		Role:    role,
 		Content: content,
 	})
@@ -204,20 +198,4 @@ func generateSessionName(content string) string {
 // SessionsDir returns the sessions directory path.
 func (m *Manager) SessionsDir() string {
 	return m.sessionsDir
-}
-
-// ConvertSessionMessages converts session messages to OpenAI chat format.
-func ConvertSessionMessages(session *Session) []openai.ChatCompletionRequestMessage {
-	if session == nil {
-		return nil
-	}
-
-	messages := make([]openai.ChatCompletionRequestMessage, 0, len(session.Messages))
-	for _, msg := range session.Messages {
-		messages = append(messages, openai.ChatCompletionRequestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
-	return messages
 }
