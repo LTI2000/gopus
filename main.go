@@ -25,6 +25,7 @@ const (
 	colorBlue  = "\033[34m" // Blue for assistant messages
 
 	// Dim colors for loaded/historical messages
+	colorDim      = "\033[2m"    // Dim/faint text for loaded messages
 	colorDimGreen = "\033[2;32m" // Dim green for loaded user messages
 	colorDimBlue  = "\033[2;34m" // Dim blue for loaded assistant messages
 )
@@ -34,29 +35,34 @@ const (
 // message: the content to display
 // isHistory: if true, uses dim colors for historical/loaded messages
 func printMessage(role, message string, isHistory bool) {
-	var color, label string
+	var roleColor, messageColor string
 	if role == "assistant" {
 		if isHistory {
-			color = colorDimBlue
+			roleColor = colorDimBlue
 		} else {
-			color = colorBlue
+			roleColor = colorBlue
 		}
-		label = "Assistant"
 	} else {
 		if isHistory {
-			color = colorDimGreen
+			roleColor = colorDimGreen
 		} else {
-			color = colorGreen
+			roleColor = colorGreen
 		}
-		label = "You"
 	}
-	fmt.Printf("%s%s: %s%s\n", color, label, message, colorReset)
+	if isHistory {
+		messageColor = colorDim
+	} else {
+		messageColor = colorReset
+	}
+	fmt.Printf("%s%s%s: %s%s%s\n", roleColor, role, colorReset, messageColor, message, colorReset)
 }
 
 func main() {
 	// Set up signal handling for graceful shutdown
-	ctx := setUpSignalHandler()
+	ctx, cancel := setUpSignalHandler()
+	defer cancel()
 
+	fmt.Printf("%s#%s%s#%s%s%s#%s\n", colorBlue, colorReset, colorGreen, colorReset, colorBlue, colorDim, colorReset)
 	fmt.Printf("Type 'quit' or 'exit' to end. Type '/help' for commands.\n")
 
 	// Load configuration
@@ -95,7 +101,7 @@ func main() {
 
 	// Main chat loop
 	for {
-		fmt.Printf("%sYou:%s ", colorGreen, colorReset)
+		fmt.Printf("%suser:%s ", colorGreen, colorReset)
 
 		// Read user input
 		if !scanner.Scan() {
@@ -201,9 +207,8 @@ func main() {
 	}
 }
 
-func setUpSignalHandler() context.Context {
+func setUpSignalHandler() (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -214,7 +219,7 @@ func setUpSignalHandler() context.Context {
 		cancel()
 		os.Exit(0)
 	}()
-	return ctx
+	return ctx, cancel
 }
 
 // selectSession displays available sessions and lets the user choose one or create a new one.
