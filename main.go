@@ -55,7 +55,7 @@ func main0(ctx context.Context) {
 	}
 
 	// Load existing messages into OpenAI format
-	chatHistory := loadChatHistory(historyManager.Current())
+	chatHistory := convertSessionMessages(historyManager.Current())
 
 	// Main chat loop
 	for {
@@ -86,7 +86,7 @@ func main0(ctx context.Context) {
 			result := history.HandleCommand(input, historyManager, scanner)
 			if result.Handled {
 				if result.SessionChanged {
-					chatHistory = loadChatHistory(historyManager.Current())
+					chatHistory = convertSessionMessages(historyManager.Current())
 				}
 				continue
 			}
@@ -165,8 +165,8 @@ func main0(ctx context.Context) {
 	}
 }
 
-// loadChatHistory converts session messages to OpenAI chat format.
-func loadChatHistory(session *history.Session) []openai.ChatCompletionRequestMessage {
+// convertSessionMessages converts session messages to OpenAI chat format.
+func convertSessionMessages(session *history.Session) []openai.ChatCompletionRequestMessage {
 	if session == nil {
 		return nil
 	}
