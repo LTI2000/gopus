@@ -11,6 +11,7 @@ import (
 	"gopus/internal/history"
 	"gopus/internal/openai"
 	"gopus/internal/printer"
+	"gopus/internal/spinner"
 )
 
 // RunLoop runs the main chat loop, reading user input and sending requests to OpenAI.
@@ -46,8 +47,16 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 			Content: input,
 		})
 
+		// Start the fancy ASCII art spinner animation
+		spin := spinner.New(spinner.StyleBrain)
+		spin.Start()
+
 		// Send request to OpenAI
 		resp, err := client.ChatCompletion(ctx, chatHistory)
+
+		// Stop the spinner before showing response or error
+		spin.Stop()
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			// Remove the failed message from both histories

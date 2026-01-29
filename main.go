@@ -22,6 +22,9 @@ func main() {
 func main0(ctx context.Context) {
 	fmt.Printf("Press Ctrl+D to end the session.\n")
 
+	// Create scanner for reading user input
+	scanner := bufio.NewScanner(os.Stdin)
+
 	// Load configuration
 	cfg, err := config.LoadDefault()
 	if err != nil {
@@ -43,9 +46,6 @@ func main0(ctx context.Context) {
 		fmt.Fprintf(os.Stderr, "Error initializing history: %v\n", err)
 		os.Exit(1)
 	}
-
-	// Create scanner for reading user input
-	scanner := bufio.NewScanner(os.Stdin)
 
 	// Session selection at startup
 	if err := history.SelectSession(historyManager, scanner); err != nil {
