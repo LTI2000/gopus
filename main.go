@@ -55,7 +55,7 @@ func main0(ctx context.Context) {
 	}
 
 	// Load existing messages into OpenAI format
-	chatHistory := convertSessionMessages(historyManager.Current())
+	chatHistory := history.ConvertSessionMessages(historyManager.Current())
 
 	// Run the chat loop
 	runChatLoop(ctx, scanner, client, historyManager, chatHistory)
@@ -65,33 +65,6 @@ func main0(ctx context.Context) {
 		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-// convertSessionMessages converts session messages to OpenAI chat format.
-func convertSessionMessages(session *history.Session) []openai.ChatCompletionRequestMessage {
-	if session == nil {
-		return nil
-	}
-
-	messages := make([]openai.ChatCompletionRequestMessage, 0, len(session.Messages))
-	for _, msg := range session.Messages {
-		var role openai.ChatCompletionRequestMessageRole
-		switch msg.Role {
-		case "user":
-			role = openai.RoleUser
-		case "assistant":
-			role = openai.RoleAssistant
-		case "system":
-			role = openai.RoleSystem
-		default:
-			role = openai.RoleUser
-		}
-		messages = append(messages, openai.ChatCompletionRequestMessage{
-			Role:    role,
-			Content: msg.Content,
-		})
-	}
-	return messages
 }
 
 // runChatLoop runs the main chat loop, reading user input and sending requests to OpenAI.

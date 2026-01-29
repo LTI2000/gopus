@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"gopus/internal/openai"
+
 	"github.com/google/uuid"
 )
 
@@ -202,4 +204,31 @@ func generateSessionName(content string) string {
 // SessionsDir returns the sessions directory path.
 func (m *Manager) SessionsDir() string {
 	return m.sessionsDir
+}
+
+// ConvertSessionMessages converts session messages to OpenAI chat format.
+func ConvertSessionMessages(session *Session) []openai.ChatCompletionRequestMessage {
+	if session == nil {
+		return nil
+	}
+
+	messages := make([]openai.ChatCompletionRequestMessage, 0, len(session.Messages))
+	for _, msg := range session.Messages {
+		var role openai.ChatCompletionRequestMessageRole
+		switch msg.Role {
+		case "user":
+			role = openai.RoleUser
+		case "assistant":
+			role = openai.RoleAssistant
+		case "system":
+			role = openai.RoleSystem
+		default:
+			role = openai.RoleUser
+		}
+		messages = append(messages, openai.ChatCompletionRequestMessage{
+			Role:    role,
+			Content: msg.Content,
+		})
+	}
+	return messages
 }
