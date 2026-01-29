@@ -37,7 +37,7 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 		}
 
 		// Add user message to history manager (auto-saves)
-		if err := historyManager.AddMessage("user", input); err != nil {
+		if err := historyManager.AddMessage(openai.RoleUser, input); err != nil {
 			fmt.Fprintf(os.Stderr, "Error saving message: %v\n", err)
 		}
 
@@ -95,11 +95,11 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 		}
 
 		assistantMessage := *assistantContent
-		printer.PrintMessage("assistant", assistantMessage, false)
+		printer.PrintMessage(openai.RoleAssistant, assistantMessage, false)
 		fmt.Println()
 
 		// Add assistant response to history manager (auto-saves)
-		if err := historyManager.AddMessage("assistant", assistantMessage); err != nil {
+		if err := historyManager.AddMessage(openai.RoleAssistant, assistantMessage); err != nil {
 			fmt.Fprintf(os.Stderr, "Error saving message: %v\n", err)
 		}
 

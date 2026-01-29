@@ -16,8 +16,8 @@ import (
 
 // Message represents a single chat message in a session.
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    openai.ChatCompletionRequestMessageRole `json:"role"`
+	Content string                                  `json:"content"`
 }
 
 // Session represents a chat session with its history.
@@ -164,7 +164,7 @@ func (m *Manager) DeleteSession(id string) error {
 }
 
 // AddMessage adds a message to the current session and saves it.
-func (m *Manager) AddMessage(role, content string) error {
+func (m *Manager) AddMessage(role openai.ChatCompletionRequestMessageRole, content string) error {
 	if m.current == nil {
 		return fmt.Errorf("no current session")
 	}
@@ -175,7 +175,7 @@ func (m *Manager) AddMessage(role, content string) error {
 	})
 
 	// Set session name from first user message if not set
-	if m.current.Name == "" && role == "user" {
+	if m.current.Name == "" && role == openai.RoleUser {
 		m.current.Name = generateSessionName(content)
 	}
 
@@ -214,19 +214,8 @@ func ConvertSessionMessages(session *Session) []openai.ChatCompletionRequestMess
 
 	messages := make([]openai.ChatCompletionRequestMessage, 0, len(session.Messages))
 	for _, msg := range session.Messages {
-		var role openai.ChatCompletionRequestMessageRole
-		switch msg.Role {
-		case "user":
-			role = openai.RoleUser
-		case "assistant":
-			role = openai.RoleAssistant
-		case "system":
-			role = openai.RoleSystem
-		default:
-			role = openai.RoleUser
-		}
 		messages = append(messages, openai.ChatCompletionRequestMessage{
-			Role:    role,
+			Role:    msg.Role,
 			Content: msg.Content,
 		})
 	}
