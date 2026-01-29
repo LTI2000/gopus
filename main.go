@@ -6,37 +6,19 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"gopus/internal/config"
 	"gopus/internal/history"
 	"gopus/internal/openai"
 	"gopus/internal/printer"
+	"gopus/internal/signal"
 )
-
-func setUpSignalHandler(action func(context.Context)) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		fmt.Println("\n\nGoodbye!")
-		cancel()
-		os.Exit(0)
-	}()
-
-	action(ctx)
-}
 
 func main() {
 	// Set up signal handling for graceful shutdown
-	setUpSignalHandler(main0)
+	signal.SetUpHandler(main0)
 }
 
 func main0(ctx context.Context) {
