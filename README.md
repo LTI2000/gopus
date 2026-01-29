@@ -85,11 +85,17 @@ go run main.go
 ### Example Session
 
 ```
-Loading configuration from config.yaml...
-Connected to OpenAI (model: gpt-3.5-turbo). Type 'quit' or 'exit' to end the conversation.
+Press Ctrl+D to end the session.
 
-You: Hello! What can you help me with?
-Assistant: Hello! I'm an AI assistant and I can help you with a wide variety of tasks including:
+=== Available Sessions ===
+  0. Start a new session
+  1. Hello! What can you help me with? (4 messages, last updated: 2026-01-28 21:15)
+
+Select a session (0 for new, or number): 0
+Starting a new session.
+
+user: Hello! What can you help me with?
+assistant: Hello! I'm an AI assistant and I can help you with a wide variety of tasks including:
 - Answering questions on many topics
 - Writing and editing text
 - Explaining concepts
@@ -98,17 +104,16 @@ Assistant: Hello! I'm an AI assistant and I can help you with a wide variety of 
 
 What would you like to know?
 
-You: Can you explain what Go interfaces are?
-Assistant: Go interfaces are a powerful feature that define a set of method signatures...
+user: Can you explain what Go interfaces are?
+assistant: Go interfaces are a powerful feature that define a set of method signatures...
 
-You: quit
-Goodbye!
+user: ^D
 ```
 
-### Commands
+### Input
 
 - Type your message and press Enter to send
-- Type `quit` or `exit` to end the conversation
+- Press `Ctrl+D` to end the input stream and terminate the session
 - Press `Ctrl+C` for immediate shutdown
 
 ### Session Management

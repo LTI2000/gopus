@@ -21,7 +21,7 @@ func main() {
 }
 
 func main0(ctx context.Context) {
-	fmt.Printf("Type 'quit' or 'exit' to end.\n")
+	fmt.Printf("Press Ctrl+D to end the session.\n")
 
 	// Load configuration
 	cfg, err := config.LoadDefault()
@@ -61,9 +61,10 @@ func main0(ctx context.Context) {
 	for {
 		fmt.Printf("%suser:%s ", printer.ColorGreen, printer.ColorReset)
 
-		// Read user input
+		// Read user input (Ctrl+D ends the input stream)
 		if !scanner.Scan() {
-			// EOF or error
+			// EOF (Ctrl+D) or error - exit the loop
+			fmt.Println()
 			break
 		}
 
@@ -72,13 +73,6 @@ func main0(ctx context.Context) {
 		// Check for empty input
 		if input == "" {
 			continue
-		}
-
-		// Check for exit commands
-		lowerInput := strings.ToLower(input)
-		if lowerInput == "quit" || lowerInput == "exit" {
-			fmt.Println("Goodbye!")
-			break
 		}
 
 		// Add user message to history manager (auto-saves)
