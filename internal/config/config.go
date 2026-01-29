@@ -43,6 +43,8 @@ const (
 
 // Load reads and parses the configuration from the specified file path.
 func Load(path string) (*Config, error) {
+	fmt.Printf("Loading configuration from %s...\n", path)
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -60,6 +62,8 @@ func Load(path string) (*Config, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Using AI model: %s\n", cfg.OpenAI.Model)
 
 	return &cfg, nil
 }
