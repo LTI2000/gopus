@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"gopus/internal/config"
@@ -50,7 +49,7 @@ func main0(ctx context.Context) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// Session selection at startup
-	if err := selectSession(historyManager, scanner, cfg.History.TruncateDisplay); err != nil {
+	if err := history.SelectSession(historyManager, scanner, cfg.History.TruncateDisplay); err != nil {
 		fmt.Fprintf(os.Stderr, "Error selecting session: %v\n", err)
 		os.Exit(1)
 	}
@@ -84,10 +83,10 @@ func main0(ctx context.Context) {
 
 		// Check for session commands
 		if strings.HasPrefix(input, "/") {
-			handled, newHistory := handleCommand(input, historyManager, scanner)
-			if handled {
-				if newHistory != nil {
-					chatHistory = newHistory
+			result := history.HandleCommand(input, historyManager, scanner)
+			if result.Handled {
+				if result.SessionChanged {
+					chatHistory = loadChatHistory(historyManager.Current())
 				}
 				continue
 			}
@@ -166,83 +165,6 @@ func main0(ctx context.Context) {
 	}
 }
 
-// selectSession displays available sessions and lets the user choose one or create a new one.
-// truncateDisplay controls message truncation: 0 = no truncation, >0 = max characters.
-func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDisplay int) error {
-	sessions, err := manager.ListSessions()
-	if err != nil {
-		return err
-	}
-
-	if len(sessions) == 0 {
-		fmt.Println("No existing sessions found. Starting a new session.")
-		manager.NewSession()
-		return nil
-	}
-
-	fmt.Println("\n=== Available Sessions ===")
-	fmt.Println("  0. Start a new session")
-	for i, session := range sessions {
-		name := session.Name
-		if name == "" {
-			name = "(unnamed)"
-		}
-		msgCount := len(session.Messages)
-		updated := session.UpdatedAt.Format("2006-01-02 15:04")
-		fmt.Printf("  %d. %s (%d messages, last updated: %s)\n", i+1, name, msgCount, updated)
-	}
-	fmt.Println()
-
-	for {
-		fmt.Print("Select a session (0 for new, or number): ")
-		if !scanner.Scan() {
-			return fmt.Errorf("failed to read input")
-		}
-
-		input := strings.TrimSpace(scanner.Text())
-		if input == "" {
-			continue
-		}
-
-		num, err := strconv.Atoi(input)
-		if err != nil {
-			fmt.Println("Please enter a valid number.")
-			continue
-		}
-
-		if num == 0 {
-			fmt.Println("Starting a new session.")
-			manager.NewSession()
-			return nil
-		}
-
-		if num < 1 || num > len(sessions) {
-			fmt.Printf("Please enter a number between 0 and %d.\n", len(sessions))
-			continue
-		}
-
-		selectedSession := sessions[num-1]
-		manager.SetCurrent(selectedSession)
-		fmt.Printf("Continuing session: %s\n", selectedSession.Name)
-
-		// Display loaded messages in dim colors to distinguish from new messages
-		if len(selectedSession.Messages) > 0 {
-			fmt.Println()
-			for _, msg := range selectedSession.Messages {
-				// Truncate long messages for display if configured
-				content := msg.Content
-				if truncateDisplay > 0 && len(content) > truncateDisplay {
-					content = content[:truncateDisplay] + "..."
-				}
-				printer.PrintMessage(msg.Role, content, true)
-			}
-			fmt.Println()
-		}
-
-		return nil
-	}
-}
-
 // loadChatHistory converts session messages to OpenAI chat format.
 func loadChatHistory(session *history.Session) []openai.ChatCompletionRequestMessage {
 	if session == nil {
@@ -268,167 +190,4 @@ func loadChatHistory(session *history.Session) []openai.ChatCompletionRequestMes
 		})
 	}
 	return messages
-}
-
-// handleCommand processes session management commands.
-// Returns true if the command was handled, and optionally a new chat history if session changed.
-func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanner) (bool, []openai.ChatCompletionRequestMessage) {
-	parts := strings.SplitN(input, " ", 2)
-	cmd := strings.ToLower(parts[0])
-
-	switch cmd {
-	case "/help":
-		printHelp()
-		return true, nil
-
-	case "/new":
-		manager.NewSession()
-		fmt.Println("Started a new session.")
-		return true, []openai.ChatCompletionRequestMessage{}
-
-	case "/list":
-		sessions, err := manager.ListSessions()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing sessions: %v\n", err)
-			return true, nil
-		}
-		if len(sessions) == 0 {
-			fmt.Println("No sessions found.")
-			return true, nil
-		}
-		fmt.Println("\n=== Sessions ===")
-		currentID := ""
-		if manager.Current() != nil {
-			currentID = manager.Current().ID
-		}
-		for i, session := range sessions {
-			name := session.Name
-			if name == "" {
-				name = "(unnamed)"
-			}
-			marker := ""
-			if session.ID == currentID {
-				marker = " (current)"
-			}
-			fmt.Printf("  %d. %s%s\n", i+1, name, marker)
-		}
-		fmt.Println()
-		return true, nil
-
-	case "/switch":
-		sessions, err := manager.ListSessions()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing sessions: %v\n", err)
-			return true, nil
-		}
-		if len(sessions) == 0 {
-			fmt.Println("No sessions to switch to.")
-			return true, nil
-		}
-
-		fmt.Println("\n=== Sessions ===")
-		for i, session := range sessions {
-			name := session.Name
-			if name == "" {
-				name = "(unnamed)"
-			}
-			fmt.Printf("  %d. %s\n", i+1, name)
-		}
-		fmt.Print("Select session number: ")
-		if !scanner.Scan() {
-			return true, nil
-		}
-		numStr := strings.TrimSpace(scanner.Text())
-		num, err := strconv.Atoi(numStr)
-		if err != nil || num < 1 || num > len(sessions) {
-			fmt.Println("Invalid selection.")
-			return true, nil
-		}
-		selectedSession := sessions[num-1]
-		manager.SetCurrent(selectedSession)
-		fmt.Printf("Switched to session: %s\n", selectedSession.Name)
-		// Display loaded messages in dim colors to distinguish from new messages
-		if len(selectedSession.Messages) > 0 {
-			fmt.Println()
-			for _, msg := range selectedSession.Messages {
-				printer.PrintMessage(msg.Role, msg.Content, true)
-			}
-			fmt.Println()
-		}
-		return true, loadChatHistory(selectedSession)
-
-	case "/rename":
-		if len(parts) < 2 {
-			fmt.Println("Usage: /rename <new name>")
-			return true, nil
-		}
-		newName := strings.TrimSpace(parts[1])
-		if manager.Current() == nil {
-			fmt.Println("No current session.")
-			return true, nil
-		}
-		manager.Current().Name = newName
-		if err := manager.SaveCurrent(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error saving session: %v\n", err)
-			return true, nil
-		}
-		fmt.Printf("Session renamed to: %s\n", newName)
-		return true, nil
-
-	case "/delete":
-		if manager.Current() == nil {
-			fmt.Println("No current session to delete.")
-			return true, nil
-		}
-		fmt.Printf("Delete session '%s'? (yes/no): ", manager.Current().Name)
-		if !scanner.Scan() {
-			return true, nil
-		}
-		confirm := strings.ToLower(strings.TrimSpace(scanner.Text()))
-		if confirm != "yes" && confirm != "y" {
-			fmt.Println("Deletion cancelled.")
-			return true, nil
-		}
-		if err := manager.DeleteSession(manager.Current().ID); err != nil {
-			fmt.Fprintf(os.Stderr, "Error deleting session: %v\n", err)
-			return true, nil
-		}
-		fmt.Println("Session deleted. Starting a new session.")
-		manager.NewSession()
-		return true, []openai.ChatCompletionRequestMessage{}
-
-	case "/info":
-		session := manager.Current()
-		if session == nil {
-			fmt.Println("No current session.")
-			return true, nil
-		}
-		fmt.Printf("\n=== Session Info ===\n")
-		fmt.Printf("ID: %s\n", session.ID)
-		fmt.Printf("Name: %s\n", session.Name)
-		fmt.Printf("Created: %s\n", session.CreatedAt.Format("2006-01-02 15:04:05"))
-		fmt.Printf("Updated: %s\n", session.UpdatedAt.Format("2006-01-02 15:04:05"))
-		fmt.Printf("Messages: %d\n\n", len(session.Messages))
-		return true, nil
-
-	default:
-		// Not a recognized command
-		return false, nil
-	}
-}
-
-// printHelp displays available commands.
-func printHelp() {
-	fmt.Println(`
-=== Commands ===
-  /help    - Show this help message
-  /new     - Start a new session
-  /list    - List all sessions
-  /switch  - Switch to a different session
-  /rename  - Rename current session (/rename <name>)
-  /delete  - Delete current session
-  /info    - Show current session info
-  quit     - Exit the application
-  exit     - Exit the application
-`)
 }
