@@ -32,12 +32,12 @@ type OpenAIConfig struct {
 // DefaultConfigPath is the default path to look for the configuration file.
 const DefaultConfigPath = "config.yaml"
 
-// Default values for optional configuration fields.
+// default values for optional configuration fields.
 const (
-	DefaultModel       = "gpt-3.5-turbo"
-	DefaultMaxTokens   = 1000
-	DefaultTemperature = 0.7
-	DefaultBaseURL     = "https://api.openai.com/v1"
+	defaultModel       = "gpt-3.5-turbo"
+	defaultMaxTokens   = 1000
+	defaultTemperature = 0.7
+	defaultBaseURL     = "https://api.openai.com/v1"
 )
 
 // Load reads and parses the configuration from the specified file path.
@@ -75,16 +75,16 @@ func LoadDefault() (*Config, error) {
 // applyDefaults sets default values for optional configuration fields.
 func (c *Config) applyDefaults() {
 	if c.OpenAI.Model == "" {
-		c.OpenAI.Model = DefaultModel
+		c.OpenAI.Model = defaultModel
 	}
 	if c.OpenAI.MaxTokens == 0 {
-		c.OpenAI.MaxTokens = DefaultMaxTokens
+		c.OpenAI.MaxTokens = defaultMaxTokens
 	}
 	if c.OpenAI.Temperature == 0 {
-		c.OpenAI.Temperature = DefaultTemperature
+		c.OpenAI.Temperature = defaultTemperature
 	}
 	if c.OpenAI.BaseURL == "" {
-		c.OpenAI.BaseURL = DefaultBaseURL
+		c.OpenAI.BaseURL = defaultBaseURL
 	}
 }
 

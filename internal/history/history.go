@@ -106,7 +106,7 @@ func (m *Manager) ListSessions() ([]*Session, error) {
 		}
 
 		sessionPath := filepath.Join(m.sessionsDir, entry.Name())
-		session, err := LoadSession(sessionPath)
+		session, err := loadSession(sessionPath)
 		if err != nil {
 			// Skip corrupted session files
 			continue
@@ -125,7 +125,7 @@ func (m *Manager) ListSessions() ([]*Session, error) {
 // LoadSessionByID loads a session by its ID.
 func (m *Manager) LoadSessionByID(id string) (*Session, error) {
 	sessionPath := filepath.Join(m.sessionsDir, id+".json")
-	session, err := LoadSession(sessionPath)
+	session, err := loadSession(sessionPath)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func (m *Manager) SaveCurrent() error {
 func (m *Manager) Save(session *Session) error {
 	session.UpdatedAt = time.Now()
 	sessionPath := filepath.Join(m.sessionsDir, session.ID+".json")
-	return SaveSession(sessionPath, session)
+	return saveSession(sessionPath, session)
 }
 
 // DeleteSession deletes a session by its ID.
