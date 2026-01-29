@@ -107,21 +107,9 @@ Goodbye!
 
 ### Commands
 
-#### Chat Commands
 - Type your message and press Enter to send
 - Type `quit` or `exit` to end the conversation
 - Press `Ctrl+C` for immediate shutdown
-
-#### Session Commands
-| Command | Description |
-|---------|-------------|
-| `/help` | Show available commands |
-| `/new` | Start a new session |
-| `/list` | List all saved sessions |
-| `/switch` | Switch to a different session |
-| `/rename <name>` | Rename the current session |
-| `/delete` | Delete the current session |
-| `/info` | Show current session info |
 
 ### Session Management
 
@@ -138,7 +126,7 @@ At startup, you'll see a list of existing sessions:
 Select a session (0 for new, or number):
 ```
 
-Sessions are automatically named based on the first message you send. You can rename them anytime with `/rename`.
+Sessions are automatically named based on the first message you send.
 
 ### Continuing Sessions
 
@@ -174,6 +162,7 @@ gopus/
 │   │   └── config.go           # Configuration loading
 │   ├── history/
 │   │   ├── history.go          # Session management and types
+│   │   ├── session.go          # Session selection UI
 │   │   └── storage.go          # JSON file operations
 │   └── openai/
 │       ├── openapi.yaml        # OpenAPI 3 specification

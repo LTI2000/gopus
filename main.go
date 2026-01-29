@@ -21,7 +21,7 @@ func main() {
 }
 
 func main0(ctx context.Context) {
-	fmt.Printf("Type 'quit' or 'exit' to end. Type '/help' for commands.\n")
+	fmt.Printf("Type 'quit' or 'exit' to end.\n")
 
 	// Load configuration
 	cfg, err := config.LoadDefault()
@@ -79,17 +79,6 @@ func main0(ctx context.Context) {
 		if lowerInput == "quit" || lowerInput == "exit" {
 			fmt.Println("Goodbye!")
 			break
-		}
-
-		// Check for session commands
-		if strings.HasPrefix(input, "/") {
-			result := history.HandleCommand(input, historyManager, scanner)
-			if result.Handled {
-				if result.SessionChanged {
-					chatHistory = convertSessionMessages(historyManager.Current())
-				}
-				continue
-			}
 		}
 
 		// Add user message to history manager (auto-saves)
