@@ -29,6 +29,30 @@ const (
 	colorDimBlue  = "\033[2;34m" // Dim blue for loaded assistant messages
 )
 
+// printMessage outputs a chat message with appropriate formatting based on role and history status.
+// role: "user" or "assistant"
+// message: the content to display
+// isHistory: if true, uses dim colors for historical/loaded messages
+func printMessage(role, message string, isHistory bool) {
+	var color, label string
+	if role == "assistant" {
+		if isHistory {
+			color = colorDimBlue
+		} else {
+			color = colorBlue
+		}
+		label = "Assistant"
+	} else {
+		if isHistory {
+			color = colorDimGreen
+		} else {
+			color = colorGreen
+		}
+		label = "You"
+	}
+	fmt.Printf("%s%s: %s%s\n", color, label, message, colorReset)
+}
+
 func main() {
 	// Set up signal handling for graceful shutdown
 	ctx := setUpSignalHandler()
@@ -155,7 +179,8 @@ func main() {
 		}
 
 		assistantMessage := *assistantContent
-		fmt.Printf("%sAssistant:%s %s\n\n", colorBlue, colorReset, assistantMessage)
+		printMessage("assistant", assistantMessage, false)
+		fmt.Println()
 
 		// Add assistant response to history manager (auto-saves)
 		if err := historyManager.AddMessage("assistant", assistantMessage); err != nil {
@@ -260,11 +285,7 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 				if truncateDisplay > 0 && len(content) > truncateDisplay {
 					content = content[:truncateDisplay] + "..."
 				}
-				if msg.Role == "assistant" {
-					fmt.Printf("%sAssistant: %s%s\n", colorDimBlue, content, colorReset)
-				} else {
-					fmt.Printf("%sYou: %s%s\n", colorDimGreen, content, colorReset)
-				}
+				printMessage(msg.Role, content, true)
 			}
 			fmt.Println()
 		}
@@ -381,11 +402,7 @@ func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanne
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				if msg.Role == "assistant" {
-					fmt.Printf("%sAssistant: %s%s\n", colorDimBlue, msg.Content, colorReset)
-				} else {
-					fmt.Printf("%sYou: %s%s\n", colorDimGreen, msg.Content, colorReset)
-				}
+				printMessage(msg.Role, msg.Content, true)
 			}
 			fmt.Println()
 		}
