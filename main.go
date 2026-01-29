@@ -14,55 +14,14 @@ import (
 	"gopus/internal/config"
 	"gopus/internal/history"
 	"gopus/internal/openai"
+	"gopus/internal/printer"
 )
-
-// ANSI color codes for terminal output
-const (
-	colorReset = "\033[0m"
-
-	// Bright colors for new messages
-	colorGreen = "\033[32m" // Green for user messages
-	colorBlue  = "\033[34m" // Blue for assistant messages
-
-	// Dim colors for loaded/historical messages
-	colorDim      = "\033[2m"    // Dim/faint text for loaded messages
-	colorDimGreen = "\033[2;32m" // Dim green for loaded user messages
-	colorDimBlue  = "\033[2;34m" // Dim blue for loaded assistant messages
-)
-
-// printMessage outputs a chat message with appropriate formatting based on role and history status.
-// role: "user" or "assistant"
-// message: the content to display
-// isHistory: if true, uses dim colors for historical/loaded messages
-func printMessage(role, message string, isHistory bool) {
-	var roleColor, messageColor string
-	if role == "assistant" {
-		if isHistory {
-			roleColor = colorDimBlue
-		} else {
-			roleColor = colorBlue
-		}
-	} else {
-		if isHistory {
-			roleColor = colorDimGreen
-		} else {
-			roleColor = colorGreen
-		}
-	}
-	if isHistory {
-		messageColor = colorDim
-	} else {
-		messageColor = colorReset
-	}
-	fmt.Printf("%s%s%s: %s%s%s\n", roleColor, role, colorReset, messageColor, message, colorReset)
-}
 
 func main() {
 	// Set up signal handling for graceful shutdown
 	ctx, cancel := setUpSignalHandler()
 	defer cancel()
 
-	fmt.Printf("%s#%s%s#%s%s%s#%s\n", colorBlue, colorReset, colorGreen, colorReset, colorBlue, colorDim, colorReset)
 	fmt.Printf("Type 'quit' or 'exit' to end. Type '/help' for commands.\n")
 
 	// Load configuration
@@ -101,7 +60,7 @@ func main() {
 
 	// Main chat loop
 	for {
-		fmt.Printf("%suser:%s ", colorGreen, colorReset)
+		fmt.Printf("%suser:%s ", printer.ColorGreen, printer.ColorReset)
 
 		// Read user input
 		if !scanner.Scan() {
@@ -185,7 +144,7 @@ func main() {
 		}
 
 		assistantMessage := *assistantContent
-		printMessage("assistant", assistantMessage, false)
+		printer.PrintMessage("assistant", assistantMessage, false)
 		fmt.Println()
 
 		// Add assistant response to history manager (auto-saves)
@@ -290,7 +249,7 @@ func selectSession(manager *history.Manager, scanner *bufio.Scanner, truncateDis
 				if truncateDisplay > 0 && len(content) > truncateDisplay {
 					content = content[:truncateDisplay] + "..."
 				}
-				printMessage(msg.Role, content, true)
+				printer.PrintMessage(msg.Role, content, true)
 			}
 			fmt.Println()
 		}
@@ -407,7 +366,7 @@ func handleCommand(input string, manager *history.Manager, scanner *bufio.Scanne
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				printMessage(msg.Role, msg.Content, true)
+				printer.PrintMessage(msg.Role, msg.Content, true)
 			}
 			fmt.Println()
 		}
