@@ -4,6 +4,9 @@ config.yaml
 # Binary
 gopus
 
+# Generated files
+*_gen.go
+
 # Go build artifacts
 *.exe
 *.exe~

@@ -27,7 +27,7 @@ clean:
 	rm -f $(GEN_MODELS)
 
 # Generate all code
-generate: generate-models generate-client
+generate:
 	$(GO) generate $(GOFLAGS) ./...
 
 # Show help
