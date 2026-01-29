@@ -36,15 +36,25 @@ func SelectSession(manager *Manager, scanner *bufio.Scanner) error {
 	}
 	fmt.Println()
 
+	// Determine default selection based on number of sessions
+	// If there are saved sessions, default to the most recent one (1)
+	// Otherwise, default to creating a new session (0)
+	defaultSelection := "0"
+	if len(sessions) > 0 {
+		defaultSelection = "1"
+	}
+
 	for {
-		fmt.Print("Select a session (0 for new, or number): ")
+		fmt.Printf("Select a session (0 for new, or number) [%s]: ", defaultSelection)
 		if !scanner.Scan() {
 			return fmt.Errorf("failed to read input")
 		}
 
 		input := strings.TrimSpace(scanner.Text())
+
+		// Use default selection when pressing return
 		if input == "" {
-			continue
+			input = defaultSelection
 		}
 
 		num, err := strconv.Atoi(input)
