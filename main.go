@@ -18,7 +18,7 @@ import (
 
 func main() {
 	// Set up signal handling for graceful shutdown
-	signal.SetUpHandler(main0)
+	signal.RunWithContext(main0)
 }
 
 func main0(ctx context.Context) {

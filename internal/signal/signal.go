@@ -9,11 +9,11 @@ import (
 	"syscall"
 )
 
-// SetUpHandler sets up signal handling for graceful shutdown.
+// RunWithContext sets up signal handling for graceful shutdown.
 // It listens for SIGINT and SIGTERM signals and calls the provided action
 // function with a cancellable context. When a signal is received, the context
 // is cancelled and the program exits gracefully.
-func SetUpHandler(action func(context.Context)) {
+func RunWithContext(action func(context.Context)) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
