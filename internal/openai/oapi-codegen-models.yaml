@@ -2,11 +2,6 @@
 # Run: go generate ./internal/openai/...
 
 package: openai
-output: models.go
+output: models_gen.go
 generate:
-  # Only generate model types from schemas
-  client: false
   models: true
-  embedded-spec: false
-output-options:
-  skip-prune: false

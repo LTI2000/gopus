@@ -4,9 +4,4 @@
 package: openai
 output: client_gen.go
 generate:
-  # Only generate the client interface and implementation
   client: true
-  models: false
-  embedded-spec: false
-output-options:
-  skip-prune: false
