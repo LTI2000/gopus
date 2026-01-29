@@ -48,7 +48,7 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 		})
 
 		// Start the fancy ASCII art spinner animation
-		spin := spinner.New(spinner.StyleBrain)
+		spin := spinner.New(spinner.StyleRobot)
 		spin.Start()
 
 		// Send request to OpenAI

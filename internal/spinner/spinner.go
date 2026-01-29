@@ -61,16 +61,16 @@ var frames = []string{
 
 // Alternative minimal spinner frames
 var minimalFrames = []string{
-	"    ⠋ Processing...",
-	"    ⠙ Processing...",
-	"    ⠹ Processing...",
-	"    ⠸ Processing...",
-	"    ⠼ Processing...",
-	"    ⠴ Processing...",
-	"    ⠦ Processing...",
-	"    ⠧ Processing...",
-	"    ⠇ Processing...",
-	"    ⠏ Processing...",
+	"    ⠋ Processing...\n",
+	"    ⠙ Processing...\n",
+	"    ⠹ Processing...\n",
+	"    ⠸ Processing...\n",
+	"    ⠼ Processing...\n",
+	"    ⠴ Processing...\n",
+	"    ⠦ Processing...\n",
+	"    ⠧ Processing...\n",
+	"    ⠇ Processing...\n",
+	"    ⠏ Processing...\n",
 }
 
 // Robot animation frames
