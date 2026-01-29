@@ -17,8 +17,7 @@ type Config struct {
 
 // HistoryConfig contains chat history settings.
 type HistoryConfig struct {
-	SessionsDir     string `yaml:"sessions_dir"`
-	TruncateDisplay int    `yaml:"truncate_display"`
+	SessionsDir string `yaml:"sessions_dir"`
 }
 
 // OpenAIConfig contains OpenAI API settings.

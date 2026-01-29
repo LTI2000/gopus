@@ -49,7 +49,7 @@ func main0(ctx context.Context) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	// Session selection at startup
-	if err := history.SelectSession(historyManager, scanner, cfg.History.TruncateDisplay); err != nil {
+	if err := history.SelectSession(historyManager, scanner); err != nil {
 		fmt.Fprintf(os.Stderr, "Error selecting session: %v\n", err)
 		os.Exit(1)
 	}

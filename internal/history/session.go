@@ -11,8 +11,7 @@ import (
 )
 
 // SelectSession displays available sessions and lets the user choose one or create a new one.
-// truncateDisplay controls message truncation: 0 = no truncation, >0 = max characters.
-func SelectSession(manager *Manager, scanner *bufio.Scanner, truncateDisplay int) error {
+func SelectSession(manager *Manager, scanner *bufio.Scanner) error {
 	sessions, err := manager.ListSessions()
 	if err != nil {
 		return err
@@ -73,12 +72,7 @@ func SelectSession(manager *Manager, scanner *bufio.Scanner, truncateDisplay int
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				// Truncate long messages for display if configured
-				content := msg.Content
-				if truncateDisplay > 0 && len(content) > truncateDisplay {
-					content = content[:truncateDisplay] + "..."
-				}
-				printer.PrintMessage(msg.Role, content, true)
+				printer.PrintMessage(msg.Role, msg.Content, true)
 			}
 			fmt.Println()
 		}
