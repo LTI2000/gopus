@@ -17,11 +17,29 @@ import (
 	"gopus/internal/printer"
 )
 
-func main() {
-	// Set up signal handling for graceful shutdown
-	ctx, cancel := setUpSignalHandler()
+func setUpSignalHandler(action func(context.Context)) {
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		fmt.Println("\n\nGoodbye!")
+		cancel()
+		os.Exit(0)
+	}()
+
+	action(ctx)
+}
+
+func main() {
+	// Set up signal handling for graceful shutdown
+	setUpSignalHandler(main0)
+}
+
+func main0(ctx context.Context) {
 	fmt.Printf("Type 'quit' or 'exit' to end. Type '/help' for commands.\n")
 
 	// Load configuration
@@ -164,21 +182,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func setUpSignalHandler() (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		fmt.Println("\n\nGoodbye!")
-		cancel()
-		os.Exit(0)
-	}()
-	return ctx, cancel
 }
 
 // selectSession displays available sessions and lets the user choose one or create a new one.
