@@ -11,13 +11,23 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	OpenAI  OpenAIConfig  `yaml:"openai"`
-	History HistoryConfig `yaml:"history"`
+	OpenAI        OpenAIConfig        `yaml:"openai"`
+	History       HistoryConfig       `yaml:"history"`
+	Summarization SummarizationConfig `yaml:"summarization"`
 }
 
 // HistoryConfig contains chat history settings.
 type HistoryConfig struct {
 	SessionsDir string `yaml:"sessions_dir"`
+}
+
+// SummarizationConfig contains settings for automatic history summarization.
+type SummarizationConfig struct {
+	Enabled        bool `yaml:"enabled"`         // Enable summarization feature
+	RecentCount    int  `yaml:"recent_count"`    // Messages to keep in full detail
+	CondensedCount int  `yaml:"condensed_count"` // Messages to condense before compressing
+	AutoSummarize  bool `yaml:"auto_summarize"`  // Enable automatic summarization
+	AutoThreshold  int  `yaml:"auto_threshold"`  // Trigger auto-summarization when message count exceeds this
 }
 
 // OpenAIConfig contains OpenAI API settings.
@@ -38,6 +48,13 @@ const (
 	defaultMaxTokens   = 1000
 	defaultTemperature = 0.7
 	defaultBaseURL     = "https://api.openai.com/v1"
+
+	// Summarization defaults
+	defaultSummarizationEnabled        = true
+	defaultSummarizationRecentCount    = 20
+	defaultSummarizationCondensedCount = 50
+	defaultSummarizationAutoSummarize  = true
+	defaultSummarizationAutoThreshold  = 100
 )
 
 // Load reads and parses the configuration from the specified file path.
@@ -85,6 +102,29 @@ func (c *Config) applyDefaults() {
 	}
 	if c.OpenAI.BaseURL == "" {
 		c.OpenAI.BaseURL = defaultBaseURL
+	}
+
+	// Summarization defaults - use a flag to detect if section was present
+	c.applySummarizationDefaults()
+}
+
+// applySummarizationDefaults sets default values for summarization config.
+func (c *Config) applySummarizationDefaults() {
+	// If RecentCount is 0, apply all defaults (section was likely not specified)
+	if c.Summarization.RecentCount == 0 {
+		c.Summarization.Enabled = defaultSummarizationEnabled
+		c.Summarization.RecentCount = defaultSummarizationRecentCount
+		c.Summarization.CondensedCount = defaultSummarizationCondensedCount
+		c.Summarization.AutoSummarize = defaultSummarizationAutoSummarize
+		c.Summarization.AutoThreshold = defaultSummarizationAutoThreshold
+	} else {
+		// Section was specified, only fill in missing values
+		if c.Summarization.CondensedCount == 0 {
+			c.Summarization.CondensedCount = defaultSummarizationCondensedCount
+		}
+		if c.Summarization.AutoThreshold == 0 {
+			c.Summarization.AutoThreshold = defaultSummarizationAutoThreshold
+		}
 	}
 }
 

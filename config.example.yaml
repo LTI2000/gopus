@@ -21,3 +21,20 @@ openai:
 history:
   # Directory to store chat sessions (optional, default: ~/.gopus/sessions/)
   # sessions_dir: "/path/to/custom/sessions"
+
+# Summarization settings for eternal chat history (optional)
+summarization:
+  # Enable summarization feature (optional, default: true)
+  enabled: true
+  
+  # Number of recent messages to keep in full detail (optional, default: 20)
+  recent_count: 20
+  
+  # Number of messages to condense before compressing (optional, default: 50)
+  condensed_count: 50
+  
+  # Enable automatic summarization when threshold is exceeded (optional, default: true)
+  auto_summarize: true
+  
+  # Message count threshold to trigger auto-summarization (optional, default: 100)
+  auto_threshold: 100

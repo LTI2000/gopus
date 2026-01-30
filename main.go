@@ -53,8 +53,9 @@ func main0(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	// Run the chat loop
-	chat.RunLoop(ctx, scanner, client, historyManager)
+	// Create and run the chat loop
+	chatLoop := chat.NewChatLoop(client, historyManager, cfg)
+	chatLoop.Run(ctx, scanner)
 
 	// Check for scanner errors
 	if err := scanner.Err(); err != nil {
