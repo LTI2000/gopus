@@ -89,7 +89,7 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 		spin.Stop()
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			printer.PrintError("Error: %v", err)
 			// Remove the failed message from both histories
 			chatHistory = chatHistory[:len(chatHistory)-1]
 			// Remove from session history too
@@ -103,7 +103,7 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 
 		// Extract and display the assistant's response
 		if len(resp.Choices) == 0 {
-			fmt.Fprintln(os.Stderr, "Error: No response from API")
+			printer.PrintError("Error: No response from API")
 			chatHistory = chatHistory[:len(chatHistory)-1]
 			session := c.historyManager.Current()
 			if len(session.Messages) > 0 {
@@ -115,7 +115,7 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 
 		assistantContent := resp.Choices[0].Message.Content
 		if assistantContent == nil {
-			fmt.Fprintln(os.Stderr, "Error: Empty response from API")
+			printer.PrintError("Error: Empty response from API")
 			chatHistory = chatHistory[:len(chatHistory)-1]
 			session := c.historyManager.Current()
 			if len(session.Messages) > 0 {

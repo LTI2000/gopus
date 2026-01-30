@@ -1,12 +1,16 @@
 // Package printer provides terminal output formatting with ANSI colors for chat messages.
 package printer
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // ANSI escape codes for terminal output
 const (
 	ColorReset = "\033[0m"
 	ColorDim   = "\033[2m" // Dim/faint intensity
+	ColorRed   = "\033[31m"
 	ColorGreen = "\033[32m"
 	ColorBlue  = "\033[34m"
 )
@@ -29,4 +33,10 @@ func PrintMessage(role string, message string, isHistory bool) {
 	}
 
 	fmt.Printf("%s%s%s%s: %s%s%s\n", dim, color, role, ColorReset, dim, message, ColorReset)
+}
+
+// PrintError outputs an error message in red to stderr.
+func PrintError(format string, args ...any) {
+	msg := fmt.Sprintf(format, args...)
+	fmt.Fprintf(os.Stderr, "%s%s%s\n", ColorRed, msg, ColorReset)
 }
