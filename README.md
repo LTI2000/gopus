@@ -15,9 +15,8 @@ A command-line chat application with persistent history and automatic summarizat
 ## Quick Start
 
 ```bash
-# Install and build
-go mod tidy
-go build -o gopus
+# Build (includes code generation)
+make
 
 # Configure
 cp config.example.yaml config.yaml
@@ -95,6 +94,9 @@ Summarization can be triggered manually with `/summarize` or automatically when 
 gopus/
 ├── main.go
 ├── config.example.yaml
+├── Makefile
+├── docs/
+│   └── dependency-diagram.md  # Package dependency diagram
 ├── internal/
 │   ├── chat/          # Chat loop and commands
 │   ├── config/        # Configuration loading
@@ -107,12 +109,40 @@ gopus/
 └── plans/             # Architecture documentation
 ```
 
+## Package Dependencies
+
+See [`docs/dependency-diagram.md`](docs/dependency-diagram.md) for the full package dependency diagram.
+
+| Package | Purpose | Key Types |
+|---------|---------|-----------|
+| **main** | Application entry point, orchestrates startup | - |
+| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig` |
+| **openai** | OpenAI API client (generated via oapi-codegen) | `ChatClient`, `ChatCompletionRequestMessage` |
+| **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
+| **chat** | Interactive chat loop with slash commands | `ChatLoop` |
+| **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
+| **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
+| **spinner** | Animated loading indicator | `Spinner` |
+| **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |
+
 ## Development
 
-Regenerate OpenAI client after modifying `internal/openai/openapi.yaml`:
+### Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make` / `make all` | Generate code and build the binary |
+| `make generate` | Regenerate OpenAI client from OpenAPI spec |
+| `make build` | Build the gopus binary |
+| `make clean` | Remove binary and generated files |
+| `make run` | Clean, build, and run the application |
+
+### Regenerating OpenAI Client
+
+After modifying [`internal/openai/openapi.yaml`](internal/openai/openapi.yaml):
 
 ```bash
-go generate ./internal/openai/...
+make generate
 ```
 
 ## License
