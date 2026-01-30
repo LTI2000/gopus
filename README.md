@@ -1,238 +1,119 @@
 # Gopus - OpenAI Chat CLI
 
-A simple command-line chat application that uses the OpenAI Chat Completions API.
+A command-line chat application with persistent history and automatic summarization.
 
 ## Features
 
-- Interactive chat loop with conversation history
-- **Persistent chat history with multiple session support**
-- Configuration file-based API key management
-- Supports all OpenAI chat models (GPT-3.5, GPT-4, etc.)
-- Configurable temperature and max tokens
-- Graceful shutdown with Ctrl+C
-- **OpenAPI 3 specification with generated client code using oapi-codegen**
+- Interactive chat with conversation history
+- Persistent sessions with automatic saving
+- **Tiered summarization** for eternal chat history (condensed → compressed)
+- **Configurable summarization prompts**
+- Slash commands (`/summarize`, `/stats`, `/help`)
+- Auto-summarization when message count exceeds threshold
+- Supports all OpenAI chat models
 
-## Prerequisites
-
-- Go 1.21 or later
-- An OpenAI API key
-
-## Installation
-
-1. Clone or download this repository:
-   ```bash
-   cd gopus
-   ```
-
-2. Install dependencies:
-   ```bash
-   go mod tidy
-   ```
-
-3. Build the application:
-   ```bash
-   go build -o gopus
-   ```
-
-## Configuration
-
-1. Copy the example configuration file:
-   ```bash
-   cp config.example.yaml config.yaml
-   ```
-
-2. Edit `config.yaml` and add your OpenAI API key:
-   ```yaml
-   openai:
-     api_key: "sk-your-actual-api-key"
-     model: "gpt-3.5-turbo"
-     max_tokens: 1000
-     temperature: 0.7
-   ```
-
-### Configuration Options
-
-#### OpenAI Settings
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `openai.api_key` | Your OpenAI API key (required) | - |
-| `openai.model` | The model to use for completions | `gpt-3.5-turbo` |
-| `openai.max_tokens` | Maximum tokens in the response | `1000` |
-| `openai.temperature` | Response randomness (0.0-2.0) | `0.7` |
-| `openai.base_url` | API base URL (for proxies) | `https://api.openai.com/v1` |
-
-#### History Settings
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `history.sessions_dir` | Directory to store chat sessions | `~/.gopus/sessions/` |
-
-## Usage
-
-Run the application:
+## Quick Start
 
 ```bash
+# Install and build
+go mod tidy
+go build -o gopus
+
+# Configure
+cp config.example.yaml config.yaml
+# Edit config.yaml with your API key
+
+# Run
 ./gopus
 ```
 
-Or run directly with Go:
+## Configuration
 
-```bash
-go run main.go
+Edit `config.yaml`:
+
+```yaml
+openai:
+  api_key: "sk-your-api-key"  # Required
+  model: "gpt-3.5-turbo"       # Optional
+  max_tokens: 1000             # Optional
+  temperature: 0.7             # Optional
+
+summarization:
+  enabled: true
+  recent_count: 20        # Messages kept in full
+  condensed_count: 50     # Messages to condense
+  auto_summarize: true
+  auto_threshold: 100     # Trigger auto-summarization
+  # condensed_prompt: |   # Custom prompt for condensed summaries
+  # compressed_prompt: |  # Custom prompt for compressed summaries
 ```
 
-### Example Session
+See [`config.example.yaml`](config.example.yaml) for all options.
 
-```
-Press Ctrl+D to end the session.
-
-=== Available Sessions ===
-  0. Start a new session
-  1. Hello! What can you help me with? (4 messages, last updated: 2026-01-28 21:15)
-
-Select a session (0 for new, or number): 0
-Starting a new session.
-
-user: Hello! What can you help me with?
-assistant: Hello! I'm an AI assistant and I can help you with a wide variety of tasks including:
-- Answering questions on many topics
-- Writing and editing text
-- Explaining concepts
-- Helping with coding problems
-- And much more!
-
-What would you like to know?
-
-user: Can you explain what Go interfaces are?
-assistant: Go interfaces are a powerful feature that define a set of method signatures...
-
-user: ^D
-```
-
-### Input
-
-- Type your message and press Enter to send
-- Press `Ctrl+D` to end the input stream and terminate the session
-- Press `Ctrl+C` for immediate shutdown
+## Usage
 
 ### Session Management
 
-Chat history is automatically saved after each message exchange. Sessions are stored as JSON files in `~/.gopus/sessions/` (or a custom directory if configured).
-
-At startup, you'll see a list of existing sessions:
+On startup, select an existing session or start a new one:
 
 ```
 === Available Sessions ===
   0. Start a new session
-  1. Hello! What can you help me with? (4 messages, last updated: 2026-01-28 21:15)
-  2. Explain Go interfaces (12 messages, last updated: 2026-01-27 14:30)
+  1. Explain Go interfaces (12 messages)
+  2. Project planning (8 messages)
 
 Select a session (0 for new, or number):
 ```
 
-Sessions are automatically named based on the first message you send.
+### Commands
 
-### Continuing Sessions
+| Command | Description |
+|---------|-------------|
+| `/summarize` | Manually trigger summarization |
+| `/stats` | Show session statistics |
+| `/help` | List available commands |
 
-When you select an existing session, the full conversation history is loaded and sent to the AI with each request. This means the AI has complete context of your previous conversation and can continue naturally from where you left off.
+### Controls
 
-```
-Continuing session: Explain Go interfaces
+- `Enter` - Send message
+- `Ctrl+D` - End session gracefully
+- `Ctrl+C` - Immediate shutdown
 
---- Recent messages ---
-... (6 earlier messages)
-You: What about empty interfaces?
-Assistant: An empty interface `interface{}` has no methods...
---- End of history ---
+## Summarization
 
-(Loaded 12 messages from history - the AI will have full context)
+Gopus uses tiered summarization to maintain context over long conversations:
 
-Connected to OpenAI (model: gpt-3.5-turbo).
-```
+1. **Recent** - Last N messages kept in full detail
+2. **Condensed** - Older messages summarized with key details
+3. **Compressed** - Oldest messages highly compressed for long-term memory
+
+Summarization can be triggered manually with `/summarize` or automatically when the message count exceeds the configured threshold.
 
 ## Project Structure
 
 ```
 gopus/
-├── main.go                     # Application entry point with chat loop
-├── tools.go                    # Tool dependencies for code generation
-├── config.yaml                 # Your configuration (not in git)
-├── config.example.yaml         # Example configuration template
-├── go.mod                      # Go module definition
-├── go.sum                      # Dependency checksums
-├── README.md                   # This file
+├── main.go
+├── config.example.yaml
 ├── internal/
-│   ├── config/
-│   │   └── config.go           # Configuration loading
-│   ├── history/
-│   │   ├── history.go          # Session management and types
-│   │   ├── session.go          # Session selection UI
-│   │   └── storage.go          # JSON file operations
-│   └── openai/
-│       ├── openapi.yaml        # OpenAPI 3 specification
-│       ├── oapi-codegen.yaml   # Code generation configuration
-│       ├── generated.go        # Generated client and types (DO NOT EDIT)
-│       └── client.go           # Wrapper client using generated code
-└── plans/
-    ├── chat-app-plan.md        # Original architecture plan
-    └── openapi-codegen-plan.md # OpenAPI integration plan
+│   ├── chat/          # Chat loop and commands
+│   ├── config/        # Configuration loading
+│   ├── history/       # Session management and storage
+│   ├── openai/        # API client (oapi-codegen generated)
+│   ├── printer/       # Output formatting
+│   ├── signal/        # Signal handling
+│   ├── spinner/       # Loading spinner
+│   └── summarize/     # Tiered summarization
+└── plans/             # Architecture documentation
 ```
 
-## Code Generation
+## Development
 
-This project uses [oapi-codegen](https://github.com/oapi-codegen/oapi-codegen) to generate the OpenAI API client from an OpenAPI 3 specification.
-
-### Regenerating the Client
-
-If you modify the OpenAPI specification (`internal/openai/openapi.yaml`), regenerate the client code:
+Regenerate OpenAI client after modifying `internal/openai/openapi.yaml`:
 
 ```bash
 go generate ./internal/openai/...
 ```
-
-Or manually:
-
-```bash
-cd internal/openai
-oapi-codegen --config=oapi-codegen.yaml openapi.yaml
-```
-
-### OpenAPI Specification
-
-The OpenAPI spec (`internal/openai/openapi.yaml`) defines the chat completions endpoint based on the official OpenAI API. It includes:
-
-- Request/response schemas for chat completions
-- Error response handling
-- Bearer token authentication
-
-### Generated vs. Wrapper Code
-
-- **`generated.go`**: Auto-generated by oapi-codegen. Do not edit manually.
-- **`client.go`**: Wrapper that provides a simplified interface and handles configuration.
-
-## Development
-
-### Adding New Endpoints
-
-1. Update `internal/openai/openapi.yaml` with the new endpoint
-2. Run `go generate ./internal/openai/...`
-3. Update `internal/openai/client.go` to expose the new functionality
-
-### Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `gopkg.in/yaml.v3` | YAML configuration parsing |
-| `github.com/google/uuid` | UUID generation for session IDs |
-| `github.com/oapi-codegen/runtime` | Runtime support for generated client |
-| `github.com/oapi-codegen/oapi-codegen/v2` | Code generation tool (dev only) |
-
-## Security Notes
-
-- Never commit your `config.yaml` file with your API key
-- The `config.yaml` file is included in `.gitignore`
-- API keys are never logged or displayed
 
 ## License
 

@@ -12,24 +12,6 @@ import (
 	"gopus/internal/openai"
 )
 
-// Prompts for different summarization levels.
-const (
-	condensedPrompt = `Summarize the following conversation, preserving:
-- Key topics discussed
-- Important decisions or conclusions
-- Relevant context for future conversations
-
-Keep the summary concise but informative. Write in third person, describing what the user and assistant discussed.`
-
-	compressedPrompt = `Create a highly compressed summary of this conversation history.
-Include only:
-- Main topics covered
-- Critical facts or decisions
-- Essential context
-
-Be extremely brief - this is long-term memory. Write in third person.`
-)
-
 // Summarizer handles chat history summarization.
 type Summarizer struct {
 	client *openai.ChatClient
@@ -133,10 +115,10 @@ func (s *Summarizer) SummarizeMessages(ctx context.Context, messages []history.M
 		conversationBuilder.WriteString(fmt.Sprintf("%s: %s\n\n", msg.Role, msg.Content))
 	}
 
-	// Select prompt based on level
-	prompt := condensedPrompt
+	// Select prompt based on level (using configurable prompts)
+	prompt := s.config.CondensedPrompt
 	if level == history.LevelCompressed {
-		prompt = compressedPrompt
+		prompt = s.config.CompressedPrompt
 	}
 
 	// Create the summarization request

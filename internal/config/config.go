@@ -23,11 +23,13 @@ type HistoryConfig struct {
 
 // SummarizationConfig contains settings for automatic history summarization.
 type SummarizationConfig struct {
-	Enabled        bool `yaml:"enabled"`         // Enable summarization feature
-	RecentCount    int  `yaml:"recent_count"`    // Messages to keep in full detail
-	CondensedCount int  `yaml:"condensed_count"` // Messages to condense before compressing
-	AutoSummarize  bool `yaml:"auto_summarize"`  // Enable automatic summarization
-	AutoThreshold  int  `yaml:"auto_threshold"`  // Trigger auto-summarization when message count exceeds this
+	Enabled          bool   `yaml:"enabled"`           // Enable summarization feature
+	RecentCount      int    `yaml:"recent_count"`      // Messages to keep in full detail
+	CondensedCount   int    `yaml:"condensed_count"`   // Messages to condense before compressing
+	AutoSummarize    bool   `yaml:"auto_summarize"`    // Enable automatic summarization
+	AutoThreshold    int    `yaml:"auto_threshold"`    // Trigger auto-summarization when message count exceeds this
+	CondensedPrompt  string `yaml:"condensed_prompt"`  // Prompt for condensed summarization
+	CompressedPrompt string `yaml:"compressed_prompt"` // Prompt for compressed summarization
 }
 
 // OpenAIConfig contains OpenAI API settings.
@@ -55,6 +57,24 @@ const (
 	defaultSummarizationCondensedCount = 50
 	defaultSummarizationAutoSummarize  = true
 	defaultSummarizationAutoThreshold  = 100
+)
+
+// Default prompts for summarization.
+const (
+	DefaultCondensedPrompt = `Summarize the following conversation, preserving:
+- Key topics discussed
+- Important decisions or conclusions
+- Relevant context for future conversations
+
+Keep the summary concise but informative. Write in third person, describing what the user and assistant discussed.`
+
+	DefaultCompressedPrompt = `Create a highly compressed summary of this conversation history.
+Include only:
+- Main topics covered
+- Critical facts or decisions
+- Essential context
+
+Be extremely brief - this is long-term memory. Write in third person.`
 )
 
 // Load reads and parses the configuration from the specified file path.
@@ -125,6 +145,14 @@ func (c *Config) applySummarizationDefaults() {
 		if c.Summarization.AutoThreshold == 0 {
 			c.Summarization.AutoThreshold = defaultSummarizationAutoThreshold
 		}
+	}
+
+	// Apply default prompts if not specified
+	if c.Summarization.CondensedPrompt == "" {
+		c.Summarization.CondensedPrompt = DefaultCondensedPrompt
+	}
+	if c.Summarization.CompressedPrompt == "" {
+		c.Summarization.CompressedPrompt = DefaultCompressedPrompt
 	}
 }
 

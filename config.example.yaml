@@ -38,3 +38,24 @@ summarization:
   
   # Message count threshold to trigger auto-summarization (optional, default: 100)
   auto_threshold: 100
+  
+  # Custom prompt for condensed summarization (optional)
+  # This prompt is used when summarizing messages in the condensed tier.
+  # condensed_prompt: |
+  #   Summarize the following conversation, preserving:
+  #   - Key topics discussed
+  #   - Important decisions or conclusions
+  #   - Relevant context for future conversations
+  #   
+  #   Keep the summary concise but informative. Write in third person, describing what the user and assistant discussed.
+  
+  # Custom prompt for compressed summarization (optional)
+  # This prompt is used when creating highly compressed long-term memory summaries.
+  # compressed_prompt: |
+  #   Create a highly compressed summary of this conversation history.
+  #   Include only:
+  #   - Main topics covered
+  #   - Critical facts or decisions
+  #   - Essential context
+  #   
+  #   Be extremely brief - this is long-term memory. Write in third person.
