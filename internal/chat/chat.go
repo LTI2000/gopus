@@ -16,10 +16,9 @@ import (
 
 // RunLoop runs the main chat loop, reading user input and sending requests to OpenAI.
 func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatClient, historyManager *history.Manager) {
-	// Use session messages directly (they are already openai.ChatCompletionRequestMessage)
+	// Convert session messages to OpenAI format for API calls
 	session := historyManager.Current()
-	chatHistory := make([]openai.ChatCompletionRequestMessage, len(session.Messages))
-	copy(chatHistory, session.Messages)
+	chatHistory := history.MessagesToOpenAI(session.Messages)
 
 	for {
 		fmt.Printf("%suser:%s ", printer.ColorGreen, printer.ColorReset)
@@ -39,7 +38,7 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 		}
 
 		// Add user message to history manager (auto-saves)
-		if err := historyManager.AddMessage(openai.RoleUser, input); err != nil {
+		if err := historyManager.AddMessage(history.RoleUser, input); err != nil {
 			fmt.Fprintf(os.Stderr, "Error saving message: %v\n", err)
 		}
 
@@ -97,11 +96,11 @@ func RunLoop(ctx context.Context, scanner *bufio.Scanner, client *openai.ChatCli
 		}
 
 		assistantMessage := *assistantContent
-		printer.PrintMessage(openai.RoleAssistant, assistantMessage, false)
+		printer.PrintMessage(string(history.RoleAssistant), assistantMessage, false)
 		fmt.Println()
 
 		// Add assistant response to history manager (auto-saves)
-		if err := historyManager.AddMessage(openai.RoleAssistant, assistantMessage); err != nil {
+		if err := historyManager.AddMessage(history.RoleAssistant, assistantMessage); err != nil {
 			fmt.Fprintf(os.Stderr, "Error saving message: %v\n", err)
 		}
 

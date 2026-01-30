@@ -1,11 +1,7 @@
 // Package printer provides terminal output formatting with ANSI colors for chat messages.
 package printer
 
-import (
-	"fmt"
-
-	"gopus/internal/openai"
-)
+import "fmt"
 
 // ANSI escape codes for terminal output
 const (
@@ -19,10 +15,10 @@ const (
 // role: the message role (user, assistant, or system)
 // message: the content to display
 // isHistory: if true, uses dim intensity for historical/loaded messages
-func PrintMessage(role openai.ChatCompletionRequestMessageRole, message string, isHistory bool) {
+func PrintMessage(role string, message string, isHistory bool) {
 	// Select color based on role
 	color := ColorGreen
-	if role == openai.RoleAssistant {
+	if role == "assistant" {
 		color = ColorBlue
 	}
 

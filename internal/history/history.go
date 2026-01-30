@@ -9,18 +9,16 @@ import (
 	"strings"
 	"time"
 
-	"gopus/internal/openai"
-
 	"github.com/google/uuid"
 )
 
 // Session represents a chat session with its history.
 type Session struct {
-	ID        string                                `json:"id"`
-	Name      string                                `json:"name"`
-	CreatedAt time.Time                             `json:"created_at"`
-	UpdatedAt time.Time                             `json:"updated_at"`
-	Messages  []openai.ChatCompletionRequestMessage `json:"messages"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Messages  []Message `json:"messages"`
 }
 
 // Manager handles session lifecycle and persistence.
@@ -67,7 +65,7 @@ func (m *Manager) NewSession() *Session {
 		Name:      "", // Will be set from first message
 		CreatedAt: now,
 		UpdatedAt: now,
-		Messages:  []openai.ChatCompletionRequestMessage{},
+		Messages:  []Message{},
 	}
 	m.current = session
 	return session
@@ -158,18 +156,18 @@ func (m *Manager) DeleteSession(id string) error {
 }
 
 // AddMessage adds a message to the current session and saves it.
-func (m *Manager) AddMessage(role openai.ChatCompletionRequestMessageRole, content string) error {
+func (m *Manager) AddMessage(role Role, content string) error {
 	if m.current == nil {
 		return fmt.Errorf("no current session")
 	}
 
-	m.current.Messages = append(m.current.Messages, openai.ChatCompletionRequestMessage{
+	m.current.Messages = append(m.current.Messages, Message{
 		Role:    role,
 		Content: content,
 	})
 
 	// Set session name from first user message if not set
-	if m.current.Name == "" && role == openai.RoleUser {
+	if m.current.Name == "" && role == RoleUser {
 		m.current.Name = generateSessionName(content)
 	}
 

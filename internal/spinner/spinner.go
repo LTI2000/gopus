@@ -2,115 +2,72 @@
 package spinner
 
 import (
+	"context"
 	"fmt"
-	"sync"
 	"time"
 )
 
-// Minimal spinner frames
-var frames = []string{
-	"⠋\n",
-	"⠙\n",
-	"⠹\n",
-	"⠸\n",
-	"⠼\n",
-	"⠴\n",
-	"⠦\n",
-	"⠧\n",
-	"⠇\n",
-	"⠏\n",
-}
+// Spinner frames using braille characters
+var frames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 // Spinner represents an animated loading spinner.
 type Spinner struct {
-	frames   []string
 	interval time.Duration
-	stopCh   chan struct{}
-	doneCh   chan struct{}
-	mu       sync.Mutex
-	running  bool
+	cancel   context.CancelFunc
+	done     chan struct{}
 }
 
 // New creates a new spinner.
 func New() *Spinner {
 	return &Spinner{
-		frames:   frames,
-		interval: 120 * time.Millisecond,
-		stopCh:   make(chan struct{}),
-		doneCh:   make(chan struct{}),
+		interval: 80 * time.Millisecond,
 	}
 }
 
 // Start begins the spinner animation.
 func (s *Spinner) Start() {
-	s.mu.Lock()
-	if s.running {
-		s.mu.Unlock()
+	// Already running
+	if s.cancel != nil {
 		return
 	}
-	s.running = true
-	s.stopCh = make(chan struct{})
-	s.doneCh = make(chan struct{})
-	s.mu.Unlock()
 
-	go func() {
-		defer close(s.doneCh)
-		frameIdx := 0
-		lineCount := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	s.cancel = cancel
+	s.done = make(chan struct{})
 
-		for {
-			select {
-			case <-s.stopCh:
-				// Clear the spinner
-				s.clearLines(lineCount)
-				return
-			default:
-				// Clear previous frame
-				s.clearLines(lineCount)
+	go s.run(ctx)
+}
 
-				// Print current frame
-				frame := s.frames[frameIdx]
-				fmt.Print(frame)
+// run animates the spinner until the context is cancelled.
+func (s *Spinner) run(ctx context.Context) {
+	defer close(s.done)
 
-				// Count lines in frame for clearing
-				lineCount = countLines(frame)
+	ticker := time.NewTicker(s.interval)
+	defer ticker.Stop()
 
-				frameIdx = (frameIdx + 1) % len(s.frames)
-				time.Sleep(s.interval)
-			}
+	frameIdx := 0
+	fmt.Print(frames[frameIdx])
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Clear the spinner character
+			fmt.Print("\r\033[K")
+			return
+		case <-ticker.C:
+			frameIdx = (frameIdx + 1) % len(frames)
+			fmt.Printf("\r%s", frames[frameIdx])
 		}
-	}()
+	}
 }
 
 // Stop stops the spinner animation.
 func (s *Spinner) Stop() {
-	s.mu.Lock()
-	if !s.running {
-		s.mu.Unlock()
+	if s.cancel == nil {
 		return
 	}
-	s.running = false
-	s.mu.Unlock()
 
-	close(s.stopCh)
-	<-s.doneCh
-}
-
-// clearLines moves cursor up and clears lines.
-func (s *Spinner) clearLines(n int) {
-	for i := 0; i < n; i++ {
-		// Move cursor up one line and clear it
-		fmt.Print("\033[1A\033[2K")
-	}
-}
-
-// countLines counts the number of newlines in a string.
-func countLines(s string) int {
-	count := 0
-	for _, c := range s {
-		if c == '\n' {
-			count++
-		}
-	}
-	return count
+	s.cancel()
+	<-s.done
+	s.cancel = nil
 }

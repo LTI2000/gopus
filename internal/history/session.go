@@ -82,7 +82,7 @@ func SelectSession(manager *Manager, scanner *bufio.Scanner) error {
 		if len(selectedSession.Messages) > 0 {
 			fmt.Println()
 			for _, msg := range selectedSession.Messages {
-				printer.PrintMessage(msg.Role, msg.Content, true)
+				printer.PrintMessage(string(msg.Role), msg.Content, true)
 			}
 			fmt.Println()
 		}
