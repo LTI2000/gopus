@@ -24,5 +24,5 @@ clean:
 	rm -f $(GEN_CLIENT)
 	rm -f $(GEN_MODELS)
 
-run:
+run: clean all
 	./$(BINARY_NAME)
