@@ -36,6 +36,9 @@ func NewChatLoop(client *openai.ChatClient, historyManager *history.Manager, cfg
 
 // Run runs the main chat loop, reading user input and sending requests to OpenAI.
 func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
+	// Display help at startup
+	c.handleHelp()
+
 	// Convert session messages to OpenAI format for API calls
 	session := c.historyManager.Current()
 	chatHistory := history.MessagesToOpenAI(session.Messages)
