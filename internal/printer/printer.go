@@ -8,11 +8,13 @@ import (
 
 // ANSI escape codes for terminal output
 const (
-	ColorReset = "\033[0m"
-	ColorDim   = "\033[2m" // Dim/faint intensity
-	ColorRed   = "\033[31m"
-	ColorGreen = "\033[32m"
-	ColorBlue  = "\033[34m"
+	ColorReset  = "\033[0m"
+	ColorDim    = "\033[2m" // Dim/faint intensity
+	ColorRed    = "\033[31m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+	ColorCyan   = "\033[36m"
 )
 
 // PrintMessage outputs a chat message with appropriate formatting based on role and history status.
@@ -21,9 +23,16 @@ const (
 // isHistory: if true, uses dim intensity for historical/loaded messages
 func PrintMessage(role string, message string, isHistory bool) {
 	// Select color based on role
-	color := ColorGreen
-	if role == "assistant" {
+	var color string
+	switch role {
+	case "user":
+		color = ColorGreen
+	case "assistant":
 		color = ColorBlue
+	case "system":
+		color = ColorYellow
+	default:
+		color = ColorCyan
 	}
 
 	// Apply dim intensity for historical messages
