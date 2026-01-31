@@ -51,7 +51,8 @@ flowchart TB
             • ChatLoop
             • Run()
             • handleCommand()
-            • /summarize, /stats, /help"]
+            • /summarize, /stats
+            • /sleep, /help"]
             
             summarize["summarize
             ━━━━━━━━━━━━━━
@@ -62,6 +63,13 @@ flowchart TB
         end
         
         subgraph UI["🎨 UI Components"]
+            canvas["canvas
+            ━━━━━━━━━━━━━━
+            • Canvas
+            • Set/Clear/Toggle
+            • Braille rendering
+            • Pixel manipulation"]
+            
             printer["printer
             ━━━━━━━━━━━━━━
             • PrintMessage()
@@ -72,7 +80,7 @@ flowchart TB
             ━━━━━━━━━━━━━━
             • Spinner
             • Start/Stop
-            • Braille animation"]
+            • Uses canvas"]
         end
         
         subgraph System["🔧 System"]
@@ -104,6 +112,9 @@ flowchart TB
     summarize --> history
     summarize --> openai
 
+    %% Spinner dependencies
+    spinner --> canvas
+
     %% History dependencies
     history --> openai
     history --> printer
@@ -129,7 +140,7 @@ flowchart TB
     class config,openai coreNode
     class history dataNode
     class chat,summarize featureNode
-    class printer,spinner uiNode
+    class canvas,printer,spinner uiNode
     class signal systemNode
     class yaml,uuid,oapi externalNode
 ```
@@ -144,6 +155,7 @@ flowchart TB
 | **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
 | **chat** | Interactive chat loop with slash commands | `ChatLoop` |
 | **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
+| **canvas** | Braille-based terminal drawing canvas | `Canvas` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
-| **spinner** | Animated loading indicator | `Spinner` |
+| **spinner** | Animated loading indicator (uses canvas) | `Spinner` |
 | **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |

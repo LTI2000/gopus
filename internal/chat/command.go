@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"gopus/internal/history"
 	"gopus/internal/openai"
@@ -13,7 +15,14 @@ import (
 
 // handleCommand processes slash commands. Returns true if the command was handled.
 func (c *ChatLoop) handleCommand(ctx context.Context, input string, chatHistory *[]openai.ChatCompletionRequestMessage) bool {
-	cmd := strings.ToLower(strings.TrimPrefix(input, "/"))
+	// Parse command and arguments
+	cmdLine := strings.TrimPrefix(input, "/")
+	parts := strings.SplitN(cmdLine, " ", 2)
+	cmd := strings.ToLower(parts[0])
+	args := ""
+	if len(parts) > 1 {
+		args = strings.TrimSpace(parts[1])
+	}
 
 	switch cmd {
 	case "summarize":
@@ -21,6 +30,9 @@ func (c *ChatLoop) handleCommand(ctx context.Context, input string, chatHistory 
 		return true
 	case "stats":
 		c.handleStats()
+		return true
+	case "sleep":
+		c.handleSleep(args)
 		return true
 	case "help":
 		c.handleHelp()
@@ -106,11 +118,47 @@ func (c *ChatLoop) handleStats() {
 	fmt.Println()
 }
 
+// handleSleep runs the spinner for a specified duration to test the animation.
+func (c *ChatLoop) handleSleep(args string) {
+	// Default to 3 seconds if no argument provided
+	seconds := 3.0
+	if args != "" {
+		parsed, err := strconv.ParseFloat(args, 64)
+		if err != nil {
+			fmt.Printf("Invalid duration: %s (expected number of seconds)\n", args)
+			return
+		}
+		seconds = parsed
+	}
+
+	if seconds <= 0 {
+		fmt.Println("Duration must be positive")
+		return
+	}
+
+	if seconds > 60 {
+		fmt.Println("Duration capped at 60 seconds")
+		seconds = 60
+	}
+
+	fmt.Printf("Sleeping for %.1f seconds...\n", seconds)
+
+	spin := spinner.New()
+	spin.Start()
+
+	time.Sleep(time.Duration(seconds * float64(time.Second)))
+
+	spin.Stop()
+
+	fmt.Println("Done!")
+}
+
 // handleHelp shows available commands.
 func (c *ChatLoop) handleHelp() {
 	fmt.Println("\n=== Available Commands ===")
-	fmt.Println("/summarize  - Summarize older messages to reduce history size")
-	fmt.Println("/stats      - Show session statistics and summarization info")
-	fmt.Println("/help       - Show this help message")
+	fmt.Println("/summarize      - Summarize older messages to reduce history size")
+	fmt.Println("/stats          - Show session statistics and summarization info")
+	fmt.Println("/sleep [secs]   - Test spinner animation (default: 3 seconds)")
+	fmt.Println("/help           - Show this help message")
 	fmt.Println()
 }

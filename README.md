@@ -8,7 +8,7 @@ A command-line chat application with persistent history and automatic summarizat
 - Persistent sessions with automatic saving
 - **Tiered summarization** for eternal chat history (condensed → compressed)
 - **Configurable summarization prompts**
-- Slash commands (`/summarize`, `/stats`, `/help`)
+- Slash commands (`/summarize`, `/stats`, `/sleep`, `/help`)
 - Auto-summarization when message count exceeds threshold
 - Supports all OpenAI chat models
 
@@ -70,6 +70,7 @@ Select a session (0 for new, or number):
 |---------|-------------|
 | `/summarize` | Manually trigger summarization |
 | `/stats` | Show session statistics |
+| `/sleep [secs]` | Test spinner animation (default: 3 seconds) |
 | `/help` | List available commands |
 
 ### Controls
@@ -98,13 +99,14 @@ gopus/
 ├── docs/
 │   └── dependency-diagram.md  # Package dependency diagram
 ├── internal/
+│   ├── canvas/        # Braille-based drawing canvas
 │   ├── chat/          # Chat loop and commands
 │   ├── config/        # Configuration loading
 │   ├── history/       # Session management and storage
 │   ├── openai/        # API client (oapi-codegen generated)
 │   ├── printer/       # Output formatting
 │   ├── signal/        # Signal handling
-│   ├── spinner/       # Loading spinner
+│   ├── spinner/       # Loading spinner (uses canvas)
 │   └── summarize/     # Tiered summarization
 └── plans/             # Architecture documentation
 ```
@@ -121,8 +123,9 @@ See [`docs/dependency-diagram.md`](docs/dependency-diagram.md) for the full pack
 | **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
 | **chat** | Interactive chat loop with slash commands | `ChatLoop` |
 | **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
+| **canvas** | Braille-based terminal drawing canvas | `Canvas` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
-| **spinner** | Animated loading indicator | `Spinner` |
+| **spinner** | Animated loading indicator (uses canvas) | `Spinner` |
 | **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |
 
 ## Development

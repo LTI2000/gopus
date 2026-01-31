@@ -4,18 +4,50 @@ package spinner
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"gopus/internal/canvas"
 )
 
-// edgePixels defines the clockwise path around the edges of a 4x4 braille display.
-// Each pair is (x, y) coordinates.
-var edgePixels = [][2]int{
-	{0, 0}, {1, 0}, {2, 0}, {3, 0}, // top edge (left to right)
-	{3, 1}, {3, 2}, {3, 3}, // right edge (top to bottom)
-	{2, 3}, {1, 3}, {0, 3}, // bottom edge (right to left)
-	{0, 2}, {0, 1}, // left edge (bottom to top)
+// ANSI escape codes for cursor visibility and color reset
+const (
+	hideCursor = "\033[?25l"
+	showCursor = "\033[?25h"
+	resetColor = "\033[0m"
+)
+
+// Phase shifts for RGB components (evenly distributed over 2π)
+const (
+	redPhase   = 0.0                 // 0 degrees
+	greenPhase = 2.0 * math.Pi / 3.0 // 120 degrees
+	bluePhase  = 4.0 * math.Pi / 3.0 // 240 degrees
+)
+
+// trailLength is the number of dots in the trail (including the head).
+const trailLength = 4
+
+// circlePixels defines a circular path on a 4x4 braille display.
+// The path approximates a circle using the available pixel positions.
+//
+// Grid layout (0,0 is top-left):
+//
+//	  0   1   2   3
+//	0     *   *
+//	1 *           *
+//	2 *           *
+//	3     *   *
+//
+// Path goes clockwise starting from top-center.
+var circlePixels = [][2]int{
+	{1, 0}, // top center-left
+	{2, 0}, // top center-right
+	{3, 1}, // right upper
+	{3, 2}, // right lower
+	{2, 3}, // bottom center-right
+	{1, 3}, // bottom center-left
+	{0, 2}, // left lower
+	{0, 1}, // left upper
 }
 
 // Spinner represents an animated loading spinner.
@@ -24,6 +56,7 @@ type Spinner struct {
 	cancel   context.CancelFunc
 	done     chan struct{}
 	canvas   *canvas.Canvas
+	phase    float64 // current phase angle for RGB cycling (in radians)
 }
 
 // New creates a new spinner.
@@ -31,6 +64,7 @@ func New() *Spinner {
 	return &Spinner{
 		interval: 80 * time.Millisecond,
 		canvas:   canvas.New(4, 4), // 2 braille chars wide, 1 char tall
+		phase:    0,
 	}
 }
 
@@ -44,6 +78,9 @@ func (s *Spinner) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel = cancel
 	s.done = make(chan struct{})
+
+	// Hide cursor before starting animation
+	fmt.Print(hideCursor)
 
 	go s.run(ctx)
 }
@@ -61,22 +98,57 @@ func (s *Spinner) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Clear the spinner characters
-			fmt.Print("\r\033[K")
+			// Clear the spinner characters, reset color, and show cursor
+			fmt.Print("\r\033[K" + resetColor + showCursor)
 			return
 		case <-ticker.C:
-			frameIdx = (frameIdx + 1) % len(edgePixels)
+			frameIdx = (frameIdx + 1) % len(circlePixels)
+			s.updateColor()
 			s.renderFrame(frameIdx)
 		}
 	}
 }
 
-// renderFrame renders a single frame of the spinner animation.
+// updateColor advances the phase for RGB sinusoidal cycling.
+func (s *Spinner) updateColor() {
+	// Advance phase by a small increment each frame
+	// Complete cycle every ~3 seconds at 80ms interval (~37.5 frames)
+	s.phase += 2.0 * math.Pi / 37.5
+	if s.phase >= 2.0*math.Pi {
+		s.phase -= 2.0 * math.Pi
+	}
+}
+
+// getRGB calculates the current RGB values using sinusoidal functions
+// with evenly distributed phase shifts for each component.
+func (s *Spinner) getRGB() (r, g, b int) {
+	// Use sin function shifted to range [0, 1] then scaled to [0, 255]
+	// sin(x) ranges from -1 to 1, so (sin(x) + 1) / 2 ranges from 0 to 1
+	r = int((math.Sin(s.phase+redPhase) + 1.0) / 2.0 * 255.0)
+	g = int((math.Sin(s.phase+greenPhase) + 1.0) / 2.0 * 255.0)
+	b = int((math.Sin(s.phase+bluePhase) + 1.0) / 2.0 * 255.0)
+	return r, g, b
+}
+
+// renderFrame renders a single frame of the spinner animation with a trail.
 func (s *Spinner) renderFrame(frameIdx int) {
 	s.canvas.Reset()
-	pos := edgePixels[frameIdx]
-	s.canvas.Set(pos[0], pos[1])
-	fmt.Printf("\r%s", s.canvas.String())
+
+	// Draw the trail (head + trailing dots)
+	numPixels := len(circlePixels)
+	for i := 0; i < trailLength; i++ {
+		// Calculate position for this trail segment
+		// i=0 is the head, i=1,2,3 are trailing behind
+		trailIdx := (frameIdx - i + numPixels) % numPixels
+		pos := circlePixels[trailIdx]
+		s.canvas.Set(pos[0], pos[1])
+	}
+
+	// Get current RGB color from sinusoidal cycling
+	r, g, b := s.getRGB()
+
+	// Print with ANSI 24-bit true color foreground (ESC[38;2;r;g;bm)
+	fmt.Printf("\r\033[38;2;%d;%d;%dm%s", r, g, b, s.canvas.String())
 }
 
 // Stop stops the spinner animation.
