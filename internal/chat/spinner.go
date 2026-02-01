@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"gopus/internal/animator"
 	"gopus/internal/canvas"
 )
 
@@ -168,4 +169,16 @@ func (s *CircleSpinner) renderFrame() string {
 	}
 
 	return s.canvas.String()
+}
+
+// WithSpinner executes the given action function while displaying a CircleSpinner.
+// It starts the spinner, runs the action, stops the spinner, and returns the action's result.
+// The type parameter T allows returning any value type from the action.
+func WithSpinner[T any](action func() (T, error)) (T, error) {
+	spinner := NewCircleSpinner()
+	anim := animator.NewAnimator(spinner)
+	anim.Start()
+	defer anim.Stop()
+
+	return action()
 }

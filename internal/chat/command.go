@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"gopus/internal/animator"
 	"gopus/internal/history"
 	"gopus/internal/openai"
 )
@@ -65,14 +64,10 @@ func (c *ChatLoop) handleSummarize(ctx context.Context, chatHistory *[]openai.Ch
 	fmt.Printf("Summarizing: %d messages to compress, %d to condense, keeping %d recent\n",
 		stats.CompressedCount, stats.CondensedMessages, stats.RecentMessages)
 
-	// Start animation
-	spin := animator.NewAnimator(NewCircleSpinner())
-	spin.Start()
-
-	// Process the session
-	newMessages, err := c.summarizer.ProcessSession(ctx, session)
-
-	spin.Stop()
+	// Process the session with spinner
+	newMessages, err := WithSpinner(func() ([]history.Message, error) {
+		return c.summarizer.ProcessSession(ctx, session)
+	})
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error during summarization: %v\n", err)
@@ -143,12 +138,11 @@ func (c *ChatLoop) handleSleep(args string) {
 
 	fmt.Printf("Sleeping for %.1f seconds...\n", seconds)
 
-	spin := animator.NewAnimator(NewCircleSpinner())
-	spin.Start()
-
-	time.Sleep(time.Duration(seconds * float64(time.Second)))
-
-	spin.Stop()
+	// Sleep with spinner animation
+	_, _ = WithSpinner(func() (any, error) {
+		time.Sleep(time.Duration(seconds * float64(time.Second)))
+		return nil, nil
+	})
 
 	fmt.Println("Done!")
 }

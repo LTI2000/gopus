@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"gopus/internal/animator"
 	"gopus/internal/config"
 	"gopus/internal/history"
 	"gopus/internal/openai"
@@ -78,15 +77,10 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 			Content: input,
 		})
 
-		// Start the animation
-		spin := animator.NewAnimator(NewCircleSpinner())
-		spin.Start()
-
-		// Send request to OpenAI
-		resp, err := c.client.ChatCompletion(ctx, chatHistory)
-
-		// Stop the spinner before showing response or error
-		spin.Stop()
+		// Send request to OpenAI with spinner
+		resp, err := WithSpinner(func() (*openai.ChatCompletionResponse, error) {
+			return c.client.ChatCompletion(ctx, chatHistory)
+		})
 
 		if err != nil {
 			printer.PrintError("Error: %v", err)
@@ -155,14 +149,10 @@ func (c *ChatLoop) checkAutoSummarize(ctx context.Context, chatHistory *[]openai
 
 	fmt.Println("\n[Auto-summarizing history...]")
 
-	// Start animation
-	spin := animator.NewAnimator(NewCircleSpinner())
-	spin.Start()
-
-	// Process the session
-	newMessages, err := c.summarizer.ProcessSession(ctx, session)
-
-	spin.Stop()
+	// Process the session with spinner
+	newMessages, err := WithSpinner(func() ([]history.Message, error) {
+		return c.summarizer.ProcessSession(ctx, session)
+	})
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Auto-summarization error: %v\n", err)
