@@ -14,14 +14,14 @@ import (
 
 // ANSI escape codes for cursor visibility, color reset, and line clearing
 const (
-	ansiEscape         = "\033["
-	ansiHideCursor     = ansiEscape + "?25l"
-	ansiShowCursor     = ansiEscape + "?25h"
-	ansiResetColor     = ansiEscape + "0m"
-	ansiClearLine      = ansiEscape + "K"
-	ansiTrueColorFg    = ansiEscape + "38;2;" // followed by r;g;bm
-	ansi256ColorFg     = ansiEscape + "38;5;" // followed by Nm
-	ansiCarriageReturn = "\r"
+	ansiEscape      = "\033["
+	ansiHideCursor  = ansiEscape + "?25l"
+	ansiShowCursor  = ansiEscape + "?25h"
+	ansiResetColor  = ansiEscape + "0m"
+	ansiClearLine   = ansiEscape + "K"
+	ansiTrueColorFg = ansiEscape + "38;2;" // followed by r;g;bm
+	ansi256ColorFg  = ansiEscape + "38;5;" // followed by Nm
+	carriageReturn  = "\r"
 )
 
 // Phase shifts for RGB components (evenly distributed over 2π)
@@ -116,8 +116,8 @@ func (s *Spinner) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Clear the spinner characters, reset color, and show cursor
-			fmt.Print(ansiCarriageReturn + ansiClearLine + ansiResetColor + ansiShowCursor)
+			// Return to start of line, clear the spinner characters, reset color, and show cursor
+			fmt.Print(carriageReturn + ansiClearLine + ansiResetColor + ansiShowCursor)
 			return
 		case <-ticker.C:
 			frameIdx = (frameIdx + 1) % len(circlePixels)
@@ -189,8 +189,8 @@ func (s *Spinner) renderFrame(frameIdx int) {
 		s.canvas.Set(pos[0], pos[1])
 	}
 
-	// Print with appropriate color escape sequence
-	fmt.Printf("%s%s%s", ansiCarriageReturn, s.getColorCode(), s.canvas.String())
+	// Use carriage return to go back to start of line, print with color
+	fmt.Printf("%s%s%s", carriageReturn, s.getColorCode(), s.canvas.String())
 }
 
 // Stop stops the spinner animation.
