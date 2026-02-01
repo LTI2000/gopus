@@ -8,11 +8,11 @@ import (
 	"os"
 	"strings"
 
+	"gopus/internal/animator"
 	"gopus/internal/config"
 	"gopus/internal/history"
 	"gopus/internal/openai"
 	"gopus/internal/printer"
-	"gopus/internal/spinner"
 	"gopus/internal/summarize"
 )
 
@@ -78,8 +78,8 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 			Content: input,
 		})
 
-		// Start the spinner animation
-		spin := spinner.NewAnimator(spinner.NewCircleSpinner())
+		// Start the animation
+		spin := animator.NewAnimator(NewCircleSpinner())
 		spin.Start()
 
 		// Send request to OpenAI
@@ -155,8 +155,8 @@ func (c *ChatLoop) checkAutoSummarize(ctx context.Context, chatHistory *[]openai
 
 	fmt.Println("\n[Auto-summarizing history...]")
 
-	// Start spinner
-	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
+	// Start animation
+	spin := animator.NewAnimator(NewCircleSpinner())
 	spin.Start()
 
 	// Process the session

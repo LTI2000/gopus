@@ -1,7 +1,5 @@
-// Package spinner provides a minimal loading animation with customizable visuals.
-// The package separates animation timing (Animator) from visual rendering (Animation interface),
-// allowing different spinner styles to be plugged in.
-package spinner
+// Package chat provides the main chat loop functionality.
+package chat
 
 import (
 	"fmt"
@@ -32,10 +30,10 @@ const (
 	bluePhase  = 4.0 * math.Pi / 3.0 // 240 degrees
 )
 
-// trailLength is the number of pixels in the spinner trail (including the head).
+// trailLength is the number of pixels in the animation trail (including the head).
 const trailLength = 4
 
-// circlePixels defines the circular path for the spinner animation.
+// circlePixels defines the circular path for the animation.
 // Each point is an [x, y] coordinate on a 4x4 braille pixel grid.
 // The path traces a clockwise circle starting from the top-center.
 //
@@ -57,7 +55,7 @@ var circlePixels = [][2]int{
 	{0, 1}, // left upper
 }
 
-// CircleSpinner implements the Animation interface with a circular
+// CircleSpinner implements the animator.Animation interface with a circular
 // braille pattern and smooth rainbow color cycling.
 type CircleSpinner struct {
 	canvas       *canvas.Canvas // braille character renderer
@@ -93,7 +91,7 @@ func (s *CircleSpinner) Start() {
 	s.Render()
 }
 
-// Stop clears the spinner line, resets colors, and restores the cursor.
+// Stop clears the animation line, resets colors, and restores the cursor.
 // Implements Animation.Stop().
 func (s *CircleSpinner) Stop() {
 	fmt.Print(carriageReturn + ansiClearLine + ansiResetColor + ansiShowCursor)
@@ -156,7 +154,7 @@ func (s *CircleSpinner) getColorCode() string {
 	return fmt.Sprintf("%s%dm", ansi256ColorFg, rgbTo256(r, g, b))
 }
 
-// renderFrame draws the current spinner frame to the canvas and returns it as a string.
+// renderFrame draws the current animation frame to the canvas and returns it as a string.
 // The frame consists of a trail of pixels following the circular path.
 func (s *CircleSpinner) renderFrame() string {
 	s.canvas.Reset()

@@ -1,14 +1,14 @@
-// Package spinner provides a minimal loading animation with customizable visuals.
+// Package animator provides a minimal loading animation with customizable visuals.
 // The package separates animation timing (Animator) from visual rendering (Animation interface),
-// allowing different spinner styles to be plugged in.
-package spinner
+// allowing different animation styles to be plugged in.
+package animator
 
 import (
 	"context"
 	"time"
 )
 
-// Animation defines the interface for spinner visual behavior.
+// Animation defines the interface for visual behavior.
 // Implementations control all visual aspects including color, frame rendering,
 // terminal state management, and output. The Animator only handles timing and lifecycle.
 type Animation interface {
@@ -28,7 +28,7 @@ type Animation interface {
 	FrameCount() int
 }
 
-// Animator manages the animation loop and timing for a spinner.
+// Animator manages the animation loop and timing.
 // It delegates all visual rendering and terminal output to an Animation implementation,
 // handling only the goroutine lifecycle and frame timing.
 type Animator struct {

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"gopus/internal/animator"
 	"gopus/internal/history"
 	"gopus/internal/openai"
-	"gopus/internal/spinner"
 )
 
 // handleCommand processes slash commands. Returns true if the command was handled.
@@ -65,8 +65,8 @@ func (c *ChatLoop) handleSummarize(ctx context.Context, chatHistory *[]openai.Ch
 	fmt.Printf("Summarizing: %d messages to compress, %d to condense, keeping %d recent\n",
 		stats.CompressedCount, stats.CondensedMessages, stats.RecentMessages)
 
-	// Start spinner
-	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
+	// Start animation
+	spin := animator.NewAnimator(NewCircleSpinner())
 	spin.Start()
 
 	// Process the session
@@ -118,7 +118,7 @@ func (c *ChatLoop) handleStats() {
 	fmt.Println()
 }
 
-// handleSleep runs the spinner for a specified duration to test the animation.
+// handleSleep runs the animation for a specified duration to test it.
 func (c *ChatLoop) handleSleep(args string) {
 	// Default to 3 seconds if no argument provided
 	seconds := 3.0
@@ -143,7 +143,7 @@ func (c *ChatLoop) handleSleep(args string) {
 
 	fmt.Printf("Sleeping for %.1f seconds...\n", seconds)
 
-	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
+	spin := animator.NewAnimator(NewCircleSpinner())
 	spin.Start()
 
 	time.Sleep(time.Duration(seconds * float64(time.Second)))
@@ -158,7 +158,7 @@ func (c *ChatLoop) handleHelp() {
 	fmt.Println("\n=== Available Commands ===")
 	fmt.Println("/summarize      - Summarize older messages to reduce history size")
 	fmt.Println("/stats          - Show session statistics and summarization info")
-	fmt.Println("/sleep [secs]   - Test spinner animation (default: 3 seconds)")
+	fmt.Println("/sleep [secs]   - Test animation (default: 3 seconds)")
 	fmt.Println("/help           - Show this help message")
 	fmt.Println()
 }
