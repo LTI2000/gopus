@@ -79,7 +79,7 @@ func (c *ChatLoop) Run(ctx context.Context, scanner *bufio.Scanner) {
 		})
 
 		// Start the spinner animation
-		spin := spinner.New()
+		spin := spinner.NewAnimator(spinner.NewCircleSpinner())
 		spin.Start()
 
 		// Send request to OpenAI
@@ -156,7 +156,7 @@ func (c *ChatLoop) checkAutoSummarize(ctx context.Context, chatHistory *[]openai
 	fmt.Println("\n[Auto-summarizing history...]")
 
 	// Start spinner
-	spin := spinner.New()
+	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
 	spin.Start()
 
 	// Process the session

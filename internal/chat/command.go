@@ -66,7 +66,7 @@ func (c *ChatLoop) handleSummarize(ctx context.Context, chatHistory *[]openai.Ch
 		stats.CompressedCount, stats.CondensedMessages, stats.RecentMessages)
 
 	// Start spinner
-	spin := spinner.New()
+	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
 	spin.Start()
 
 	// Process the session
@@ -143,7 +143,7 @@ func (c *ChatLoop) handleSleep(args string) {
 
 	fmt.Printf("Sleeping for %.1f seconds...\n", seconds)
 
-	spin := spinner.New()
+	spin := spinner.NewAnimator(spinner.NewCircleSpinner())
 	spin.Start()
 
 	time.Sleep(time.Duration(seconds * float64(time.Second)))
