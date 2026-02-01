@@ -28,12 +28,13 @@ type Manager struct {
 }
 
 // DefaultSessionsDir returns the default directory for storing sessions.
+// It uses .gopus/sessions in the current working directory.
 func DefaultSessionsDir() (string, error) {
-	home, err := os.UserHomeDir()
+	cwd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		return "", fmt.Errorf("failed to get current directory: %w", err)
 	}
-	return filepath.Join(home, ".gopus", "sessions"), nil
+	return filepath.Join(cwd, ".gopus", "sessions"), nil
 }
 
 // NewManager creates a new session manager with the specified sessions directory.

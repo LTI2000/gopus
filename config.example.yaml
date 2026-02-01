@@ -19,7 +19,7 @@ openai:
 
 # Chat history settings (optional)
 history:
-  # Directory to store chat sessions (optional, default: ~/.gopus/sessions/)
+  # Directory to store chat sessions (optional, default: ./.gopus/sessions/)
   # sessions_dir: "/path/to/custom/sessions"
 
 # Summarization settings for eternal chat history (optional)

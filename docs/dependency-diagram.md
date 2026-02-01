@@ -79,7 +79,9 @@ flowchart TB
             spinner["spinner
             ━━━━━━━━━━━━━━
             • Spinner
-            • Start/Stop
+            • Animation interface
+            • CircleAnimation
+            • Start/Stop/Render
             • Uses canvas"]
         end
         
@@ -157,5 +159,5 @@ flowchart TB
 | **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
 | **canvas** | Braille-based terminal drawing canvas | `Canvas` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
-| **spinner** | Animated loading indicator (uses canvas) | `Spinner` |
+| **spinner** | Animated loading indicator (uses canvas) | `Spinner`, `Animation`, `CircleAnimation` |
 | **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |

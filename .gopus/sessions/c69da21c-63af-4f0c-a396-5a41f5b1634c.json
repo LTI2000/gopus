@@ -1,0 +1,16 @@
+{
+  "id": "c69da21c-63af-4f0c-a396-5a41f5b1634c",
+  "name": "I am happy to have sessions now.",
+  "created_at": "2026-01-28T21:27:30.561811+01:00",
+  "updated_at": "2026-01-28T21:27:53.396177+01:00",
+  "messages": [
+    {
+      "role": "user",
+      "content": "I am happy to have sessions now."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I'm glad you're here and ready to chat.\n\nHow can I help you today? Whether you have questions, want to discuss a topic, need help with a task, or just want to have a conversation—I'm here for it.\n\nWhat's on your mind?"
+    }
+  ]
+}
