@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
+	"strings"
 	"time"
 
 	"gopus/internal/canvas"
@@ -23,6 +25,18 @@ const (
 	greenPhase = 2.0 * math.Pi / 3.0 // 120 degrees
 	bluePhase  = 4.0 * math.Pi / 3.0 // 240 degrees
 )
+
+// color256Cycle defines a sequence of 256-color palette indices for smooth
+// color cycling. These are selected from the 6x6x6 color cube (indices 16-231)
+// to create a rainbow-like progression.
+var color256Cycle = []int{
+	196, 202, 208, 214, 220, 226, // red -> orange -> yellow
+	190, 154, 118, 82, 46, // yellow -> green
+	47, 48, 49, 50, 51, // green -> cyan
+	45, 39, 33, 27, 21, // cyan -> blue
+	57, 93, 129, 165, 201, // blue -> magenta
+	200, 199, 198, 197, // magenta -> red
+}
 
 // trailLength is the number of dots in the trail (including the head).
 const trailLength = 4
@@ -52,19 +66,32 @@ var circlePixels = [][2]int{
 
 // Spinner represents an animated loading spinner.
 type Spinner struct {
-	interval time.Duration
-	cancel   context.CancelFunc
-	done     chan struct{}
-	canvas   *canvas.Canvas
-	phase    float64 // current phase angle for RGB cycling (in radians)
+	interval     time.Duration
+	cancel       context.CancelFunc
+	done         chan struct{}
+	canvas       *canvas.Canvas
+	phase        float64 // current phase angle for RGB cycling (in radians)
+	colorIdx     int     // current index in color256Cycle for 256-color mode
+	useTrueColor bool    // whether to use 24-bit true color or 256-color mode
+}
+
+// supportsTrueColor checks if the terminal supports 24-bit true color.
+// macOS Terminal.app does not support true color, but iTerm2 and other
+// modern terminals do. We detect this via the COLORTERM environment variable.
+func supportsTrueColor() bool {
+	colorterm := os.Getenv("COLORTERM")
+	// COLORTERM=truecolor or COLORTERM=24bit indicates true color support
+	return strings.Contains(colorterm, "truecolor") || strings.Contains(colorterm, "24bit")
 }
 
 // New creates a new spinner.
 func New() *Spinner {
 	return &Spinner{
-		interval: 80 * time.Millisecond,
-		canvas:   canvas.New(4, 4), // 2 braille chars wide, 1 char tall
-		phase:    0,
+		interval:     80 * time.Millisecond,
+		canvas:       canvas.New(4, 4), // 2 braille chars wide, 1 char tall
+		phase:        0,
+		colorIdx:     0,
+		useTrueColor: supportsTrueColor(),
 	}
 }
 
@@ -109,13 +136,18 @@ func (s *Spinner) run(ctx context.Context) {
 	}
 }
 
-// updateColor advances the phase for RGB sinusoidal cycling.
+// updateColor advances the color for the next frame.
 func (s *Spinner) updateColor() {
-	// Advance phase by a small increment each frame
-	// Complete cycle every ~3 seconds at 80ms interval (~37.5 frames)
-	s.phase += 2.0 * math.Pi / 37.5
-	if s.phase >= 2.0*math.Pi {
-		s.phase -= 2.0 * math.Pi
+	if s.useTrueColor {
+		// Advance phase by a small increment each frame
+		// Complete cycle every ~3 seconds at 80ms interval (~37.5 frames)
+		s.phase += 2.0 * math.Pi / 37.5
+		if s.phase >= 2.0*math.Pi {
+			s.phase -= 2.0 * math.Pi
+		}
+	} else {
+		// Advance through the 256-color cycle
+		s.colorIdx = (s.colorIdx + 1) % len(color256Cycle)
 	}
 }
 
@@ -128,6 +160,18 @@ func (s *Spinner) getRGB() (r, g, b int) {
 	g = int((math.Sin(s.phase+greenPhase) + 1.0) / 2.0 * 255.0)
 	b = int((math.Sin(s.phase+bluePhase) + 1.0) / 2.0 * 255.0)
 	return r, g, b
+}
+
+// getColorCode returns the ANSI escape sequence for the current color.
+func (s *Spinner) getColorCode() string {
+	if s.useTrueColor {
+		// Get current RGB color from sinusoidal cycling
+		r, g, b := s.getRGB()
+		// ANSI 24-bit true color foreground (ESC[38;2;r;g;bm)
+		return fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+	}
+	// ANSI 256-color foreground (ESC[38;5;Nm)
+	return fmt.Sprintf("\033[38;5;%dm", color256Cycle[s.colorIdx])
 }
 
 // renderFrame renders a single frame of the spinner animation with a trail.
@@ -144,11 +188,8 @@ func (s *Spinner) renderFrame(frameIdx int) {
 		s.canvas.Set(pos[0], pos[1])
 	}
 
-	// Get current RGB color from sinusoidal cycling
-	r, g, b := s.getRGB()
-
-	// Print with ANSI 24-bit true color foreground (ESC[38;2;r;g;bm)
-	fmt.Printf("\r\033[38;2;%d;%d;%dm%s", r, g, b, s.canvas.String())
+	// Print with appropriate color escape sequence
+	fmt.Printf("\r%s%s", s.getColorCode(), s.canvas.String())
 }
 
 // Stop stops the spinner animation.
