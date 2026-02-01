@@ -12,11 +12,16 @@ import (
 	"gopus/internal/canvas"
 )
 
-// ANSI escape codes for cursor visibility and color reset
+// ANSI escape codes for cursor visibility, color reset, and line clearing
 const (
-	hideCursor = "\033[?25l"
-	showCursor = "\033[?25h"
-	resetColor = "\033[0m"
+	ansiEscape         = "\033["
+	ansiHideCursor     = ansiEscape + "?25l"
+	ansiShowCursor     = ansiEscape + "?25h"
+	ansiResetColor     = ansiEscape + "0m"
+	ansiClearLine      = ansiEscape + "K"
+	ansiTrueColorFg    = ansiEscape + "38;2;" // followed by r;g;bm
+	ansi256ColorFg     = ansiEscape + "38;5;" // followed by Nm
+	ansiCarriageReturn = "\r"
 )
 
 // Phase shifts for RGB components (evenly distributed over 2π)
@@ -106,9 +111,6 @@ func (s *Spinner) Start() {
 	s.cancel = cancel
 	s.done = make(chan struct{})
 
-	// Hide cursor before starting animation
-	fmt.Print(hideCursor)
-
 	go s.run(ctx)
 }
 
@@ -119,6 +121,9 @@ func (s *Spinner) run(ctx context.Context) {
 	ticker := time.NewTicker(s.interval)
 	defer ticker.Stop()
 
+	// Hide cursor before starting animation
+	fmt.Print(ansiHideCursor)
+
 	frameIdx := 0
 	s.renderFrame(frameIdx)
 
@@ -126,7 +131,7 @@ func (s *Spinner) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			// Clear the spinner characters, reset color, and show cursor
-			fmt.Print("\r\033[K" + resetColor + showCursor)
+			fmt.Print(ansiCarriageReturn + ansiClearLine + ansiResetColor + ansiShowCursor)
 			return
 		case <-ticker.C:
 			frameIdx = (frameIdx + 1) % len(circlePixels)
@@ -168,10 +173,11 @@ func (s *Spinner) getColorCode() string {
 		// Get current RGB color from sinusoidal cycling
 		r, g, b := s.getRGB()
 		// ANSI 24-bit true color foreground (ESC[38;2;r;g;bm)
-		return fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+		return fmt.Sprintf("%s%d;%d;%dm", ansiTrueColorFg, r, g, b)
+	} else {
+		// ANSI 256-color foreground (ESC[38;5;Nm)
+		return fmt.Sprintf("%s%dm", ansi256ColorFg, color256Cycle[s.colorIdx])
 	}
-	// ANSI 256-color foreground (ESC[38;5;Nm)
-	return fmt.Sprintf("\033[38;5;%dm", color256Cycle[s.colorIdx])
 }
 
 // renderFrame renders a single frame of the spinner animation with a trail.
@@ -180,7 +186,7 @@ func (s *Spinner) renderFrame(frameIdx int) {
 
 	// Draw the trail (head + trailing dots)
 	numPixels := len(circlePixels)
-	for i := 0; i < trailLength; i++ {
+	for i := range trailLength {
 		// Calculate position for this trail segment
 		// i=0 is the head, i=1,2,3 are trailing behind
 		trailIdx := (frameIdx - i + numPixels) % numPixels
@@ -189,7 +195,7 @@ func (s *Spinner) renderFrame(frameIdx int) {
 	}
 
 	// Print with appropriate color escape sequence
-	fmt.Printf("\r%s%s", s.getColorCode(), s.canvas.String())
+	fmt.Printf("%s%s%s", ansiCarriageReturn, s.getColorCode(), s.canvas.String())
 }
 
 // Stop stops the spinner animation.
