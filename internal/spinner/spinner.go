@@ -31,18 +31,6 @@ const (
 	bluePhase  = 4.0 * math.Pi / 3.0 // 240 degrees
 )
 
-// color256Cycle defines a sequence of 256-color palette indices for smooth
-// color cycling. These are selected from the 6x6x6 color cube (indices 16-231)
-// to create a rainbow-like progression.
-var color256Cycle = []int{
-	196, 202, 208, 214, 220, 226, // red -> orange -> yellow
-	190, 154, 118, 82, 46, // yellow -> green
-	47, 48, 49, 50, 51, // green -> cyan
-	45, 39, 33, 27, 21, // cyan -> blue
-	57, 93, 129, 165, 201, // blue -> magenta
-	200, 199, 198, 197, // magenta -> red
-}
-
 // trailLength is the number of dots in the trail (including the head).
 const trailLength = 4
 
@@ -76,7 +64,6 @@ type Spinner struct {
 	done         chan struct{}
 	canvas       *canvas.Canvas
 	phase        float64 // current phase angle for RGB cycling (in radians)
-	colorIdx     int     // current index in color256Cycle for 256-color mode
 	useTrueColor bool    // whether to use 24-bit true color or 256-color mode
 }
 
@@ -95,7 +82,6 @@ func New() *Spinner {
 		interval:     80 * time.Millisecond,
 		canvas:       canvas.New(4, 4), // 2 braille chars wide, 1 char tall
 		phase:        0,
-		colorIdx:     0,
 		useTrueColor: supportsTrueColor(),
 	}
 }
@@ -143,16 +129,11 @@ func (s *Spinner) run(ctx context.Context) {
 
 // updateColor advances the color for the next frame.
 func (s *Spinner) updateColor() {
-	if s.useTrueColor {
-		// Advance phase by a small increment each frame
-		// Complete cycle every ~3 seconds at 80ms interval (~37.5 frames)
-		s.phase += 2.0 * math.Pi / 37.5
-		if s.phase >= 2.0*math.Pi {
-			s.phase -= 2.0 * math.Pi
-		}
-	} else {
-		// Advance through the 256-color cycle
-		s.colorIdx = (s.colorIdx + 1) % len(color256Cycle)
+	// Advance phase by a small increment each frame
+	// Complete cycle every ~3 seconds at 80ms interval (~37.5 frames)
+	s.phase += 2.0 * math.Pi / 37.5
+	if s.phase >= 2.0*math.Pi {
+		s.phase -= 2.0 * math.Pi
 	}
 }
 
@@ -167,16 +148,30 @@ func (s *Spinner) getRGB() (r, g, b int) {
 	return r, g, b
 }
 
+// rgbTo256 converts RGB values (0-255) to an ANSI 256-color palette index
+// using the 6x6x6 color cube (indices 16-231).
+// The cube uses values 0-5 for each component, so we scale from 0-255.
+func rgbTo256(r, g, b int) int {
+	// Convert 0-255 range to 0-5 range for the 6x6x6 cube
+	// Using integer division: (value * 5 + 127) / 255 gives better rounding
+	r6 := (r*5 + 127) / 255
+	g6 := (g*5 + 127) / 255
+	b6 := (b*5 + 127) / 255
+	// 6x6x6 cube starts at index 16
+	return 16 + 36*r6 + 6*g6 + b6
+}
+
 // getColorCode returns the ANSI escape sequence for the current color.
 func (s *Spinner) getColorCode() string {
+	// Get current RGB color from sinusoidal cycling
+	r, g, b := s.getRGB()
 	if s.useTrueColor {
-		// Get current RGB color from sinusoidal cycling
-		r, g, b := s.getRGB()
 		// ANSI 24-bit true color foreground (ESC[38;2;r;g;bm)
 		return fmt.Sprintf("%s%d;%d;%dm", ansiTrueColorFg, r, g, b)
 	} else {
 		// ANSI 256-color foreground (ESC[38;5;Nm)
-		return fmt.Sprintf("%s%dm", ansi256ColorFg, color256Cycle[s.colorIdx])
+		// Convert RGB to 6x6x6 cube index
+		return fmt.Sprintf("%s%dm", ansi256ColorFg, rgbTo256(r, g, b))
 	}
 }
 
