@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gopus/internal/printer"
+	"gopus/internal/table"
 )
 
 // SelectSession displays available sessions and lets the user choose one or create a new one.
@@ -23,18 +24,29 @@ func SelectSession(manager *Manager, scanner *bufio.Scanner) error {
 		return nil
 	}
 
-	fmt.Println("\n=== Available Sessions ===")
-	fmt.Println("  0. Start a new session")
+	// Create table with columns
+	tbl := table.New(
+		table.Column{Header: "#", MinWidth: 3, Align: table.AlignLeft},
+		table.Column{Header: "Name", MinWidth: 4, MaxWidth: 40, Align: table.AlignLeft},
+		table.Column{Header: "Msgs", MinWidth: 4, Align: table.AlignRight},
+		table.Column{Header: "Last Updated", Align: table.AlignLeft},
+	)
+
+	// Add session rows
 	for i, session := range sessions {
 		name := session.Name
 		if name == "" {
 			name = "(unnamed)"
 		}
-		msgCount := len(session.Messages)
+		msgCount := fmt.Sprintf("%d", len(session.Messages))
 		updated := session.UpdatedAt.Format("2006-01-02 15:04")
-		fmt.Printf("  %d. %s (%d messages, last updated: %s)\n", i+1, name, msgCount, updated)
+		tbl.AddRow(fmt.Sprintf("%d", i+1), name, msgCount, updated)
 	}
-	fmt.Println()
+
+	// Print table with highlighted first column (row numbers in yellow)
+	opts := table.DefaultPrintOptions()
+	opts.HighlightColumn = 0
+	tbl.Print(opts)
 
 	// Determine default selection based on number of sessions
 	// If there are saved sessions, default to the most recent one (1)
