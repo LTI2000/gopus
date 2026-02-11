@@ -30,6 +30,12 @@ func (c *ChatLoop) handleCommand(ctx context.Context, input string, chatHistory 
 	case "stats":
 		c.handleStats()
 		return true
+	case "tools":
+		c.handleTools()
+		return true
+	case "servers":
+		c.handleServers()
+		return true
 	case "sleep":
 		c.handleSleep(args)
 		return true
@@ -147,11 +153,93 @@ func (c *ChatLoop) handleSleep(args string) {
 	fmt.Println("Done!")
 }
 
+// handleTools shows available MCP tools.
+func (c *ChatLoop) handleTools() {
+	if c.mcpClient == nil {
+		fmt.Println("MCP is not configured.")
+		return
+	}
+
+	if !c.config.MCP.Enabled {
+		fmt.Println("MCP is disabled in configuration.")
+		return
+	}
+
+	tools := c.mcpClient.Registry().ListTools()
+	if len(tools) == 0 {
+		fmt.Println("No tools available.")
+		return
+	}
+
+	fmt.Println("\n=== Available Tools ===")
+	for _, tool := range tools {
+		fmt.Printf("  %s (%s)\n", tool.Name, tool.ServerID)
+		if tool.Description != "" {
+			fmt.Printf("    %s\n", tool.Description)
+		}
+	}
+	fmt.Printf("\nTotal: %d tool(s)\n\n", len(tools))
+}
+
+// handleServers shows connected MCP servers.
+func (c *ChatLoop) handleServers() {
+	if c.mcpClient == nil {
+		fmt.Println("MCP is not configured.")
+		return
+	}
+
+	if !c.config.MCP.Enabled {
+		fmt.Println("MCP is disabled in configuration.")
+		return
+	}
+
+	servers := c.mcpClient.ListServers()
+	if len(servers) == 0 {
+		fmt.Println("No MCP servers connected.")
+		return
+	}
+
+	fmt.Println("\n=== Connected MCP Servers ===")
+	for _, server := range servers {
+		stateStr := "unknown"
+		switch server.State {
+		case 0: // StateDisconnected
+			stateStr = "disconnected"
+		case 1: // StateConnecting
+			stateStr = "connecting"
+		case 2: // StateConnected
+			stateStr = "connected"
+		case 3: // StateError
+			stateStr = "error"
+		}
+
+		fmt.Printf("  %s (%s)\n", server.ID, stateStr)
+		if server.ServerInfo.Name != "" {
+			fmt.Printf("    Server: %s v%s\n", server.ServerInfo.Name, server.ServerInfo.Version)
+		}
+		if server.LastError != nil {
+			fmt.Printf("    Error: %v\n", server.LastError)
+		}
+
+		// Count tools from this server
+		toolCount := 0
+		for _, tool := range c.mcpClient.Registry().ListTools() {
+			if tool.ServerID == server.ID {
+				toolCount++
+			}
+		}
+		fmt.Printf("    Tools: %d\n", toolCount)
+	}
+	fmt.Printf("\nTotal: %d server(s)\n\n", len(servers))
+}
+
 // handleHelp shows available commands.
 func (c *ChatLoop) handleHelp() {
 	fmt.Println("\n=== Available Commands ===")
 	fmt.Println("/summarize      - Summarize older messages to reduce history size")
 	fmt.Println("/stats          - Show session statistics and summarization info")
+	fmt.Println("/tools          - List available MCP tools")
+	fmt.Println("/servers        - Show connected MCP servers")
 	fmt.Println("/sleep [secs]   - Test animation (default: 3 seconds)")
 	fmt.Println("/help           - Show this help message")
 	fmt.Println()

@@ -14,6 +14,7 @@ type Config struct {
 	OpenAI        OpenAIConfig        `yaml:"openai"`
 	History       HistoryConfig       `yaml:"history"`
 	Summarization SummarizationConfig `yaml:"summarization"`
+	MCP           MCPConfig           `yaml:"mcp"`
 }
 
 // HistoryConfig contains chat history settings.
@@ -41,6 +42,31 @@ type OpenAIConfig struct {
 	BaseURL     string  `yaml:"base_url"`
 }
 
+// MCPConfig contains MCP client settings.
+type MCPConfig struct {
+	Enabled          bool              `yaml:"enabled"`           // Enable MCP support
+	ToolConfirmation string            `yaml:"tool_confirmation"` // "always", "never", or "ask"
+	DefaultTimeout   int               `yaml:"default_timeout"`   // Timeout in seconds for MCP requests
+	Servers          []MCPServerConfig `yaml:"servers"`           // List of MCP servers to connect to
+}
+
+// MCPServerConfig defines an MCP server connection.
+type MCPServerConfig struct {
+	Name    string            `yaml:"name"`     // Unique identifier for this server
+	Command string            `yaml:"command"`  // Command to start the server
+	Args    []string          `yaml:"args"`     // Command arguments
+	Env     map[string]string `yaml:"env"`      // Additional environment variables
+	WorkDir string            `yaml:"work_dir"` // Working directory for the command
+	Enabled bool              `yaml:"enabled"`  // Enable/disable this server
+}
+
+// ToolConfirmation constants
+const (
+	ToolConfirmationAlways = "always" // Always ask before executing tools
+	ToolConfirmationNever  = "never"  // Never ask, execute automatically
+	ToolConfirmationAsk    = "ask"    // Ask based on tool risk level (default)
+)
+
 // DefaultConfigPath is the default path to look for the configuration file.
 const DefaultConfigPath = "config.yaml"
 
@@ -57,6 +83,11 @@ const (
 	defaultSummarizationCondensedCount = 50
 	defaultSummarizationAutoSummarize  = true
 	defaultSummarizationAutoThreshold  = 100
+
+	// MCP defaults
+	defaultMCPEnabled          = false // Disabled by default until servers are configured
+	defaultMCPToolConfirmation = ToolConfirmationAsk
+	defaultMCPDefaultTimeout   = 30 // seconds
 )
 
 // Default prompts for summarization.
@@ -126,6 +157,9 @@ func (c *Config) applyDefaults() {
 
 	// Summarization defaults - use a flag to detect if section was present
 	c.applySummarizationDefaults()
+
+	// MCP defaults
+	c.applyMCPDefaults()
 }
 
 // applySummarizationDefaults sets default values for summarization config.
@@ -154,6 +188,28 @@ func (c *Config) applySummarizationDefaults() {
 	if c.Summarization.CompressedPrompt == "" {
 		c.Summarization.CompressedPrompt = DefaultCompressedPrompt
 	}
+}
+
+// applyMCPDefaults sets default values for MCP config.
+func (c *Config) applyMCPDefaults() {
+	// Apply defaults for tool confirmation
+	if c.MCP.ToolConfirmation == "" {
+		c.MCP.ToolConfirmation = defaultMCPToolConfirmation
+	}
+
+	// Apply default timeout
+	if c.MCP.DefaultTimeout == 0 {
+		c.MCP.DefaultTimeout = defaultMCPDefaultTimeout
+	}
+
+	// Enable MCP if servers are configured
+	if len(c.MCP.Servers) > 0 && !c.MCP.Enabled {
+		// Don't auto-enable, but this is where we could
+	}
+
+	// Note: We don't auto-enable servers because YAML unmarshaling sets bool
+	// to false by default, so we can't distinguish between "not set" and
+	// "explicitly set to false". Users must set enabled: true explicitly.
 }
 
 // validate checks that all required configuration fields are present.

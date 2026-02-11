@@ -63,12 +63,22 @@ const RoleSystem = ChatCompletionRequestMessageRoleSystem
 
 // ChatCompletion sends a chat completion request to the OpenAI API.
 func (c *ChatClient) ChatCompletion(ctx context.Context, messages []ChatCompletionRequestMessage) (*ChatCompletionResponse, error) {
+	return c.ChatCompletionWithTools(ctx, messages, nil)
+}
+
+// ChatCompletionWithTools sends a chat completion request with optional tools.
+func (c *ChatClient) ChatCompletionWithTools(ctx context.Context, messages []ChatCompletionRequestMessage, tools []ChatCompletionTool) (*ChatCompletionResponse, error) {
 	// Build the request
 	req := CreateChatCompletionRequest{
 		Model:       c.model,
 		Messages:    messages,
 		MaxTokens:   &c.maxTokens,
 		Temperature: &c.temperature,
+	}
+
+	// Add tools if provided
+	if len(tools) > 0 {
+		req.Tools = &tools
 	}
 
 	// Send the request using the generated client

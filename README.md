@@ -1,6 +1,6 @@
 # Gopus - OpenAI Chat CLI
 
-A command-line chat application with persistent history and automatic summarization.
+A command-line chat application with persistent history, automatic summarization, and MCP tool support.
 
 ## Features
 
@@ -8,7 +8,8 @@ A command-line chat application with persistent history and automatic summarizat
 - Persistent sessions with automatic saving
 - **Tiered summarization** for eternal chat history (condensed → compressed)
 - **Configurable summarization prompts**
-- Slash commands (`/summarize`, `/stats`, `/sleep`, `/help`)
+- **MCP (Model Context Protocol) support** for external tools
+- Slash commands (`/summarize`, `/stats`, `/tools`, `/servers`, `/help`)
 - Auto-summarization when message count exceeds threshold
 - Supports all OpenAI chat models
 
@@ -43,8 +44,17 @@ summarization:
   condensed_count: 50     # Messages to condense
   auto_summarize: true
   auto_threshold: 100     # Trigger auto-summarization
-  # condensed_prompt: |   # Custom prompt for condensed summaries
-  # compressed_prompt: |  # Custom prompt for compressed summaries
+
+# MCP (Model Context Protocol) for external tools
+mcp:
+  enabled: true
+  tool_confirmation: "ask"  # "always", "never", or "ask"
+  default_timeout: 30       # seconds
+  servers:
+    - name: "filesystem"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+      enabled: true
 ```
 
 See [`config.example.yaml`](config.example.yaml) for all options.
@@ -70,6 +80,8 @@ Select a session (0 for new, or number):
 |---------|-------------|
 | `/summarize` | Manually trigger summarization |
 | `/stats` | Show session statistics |
+| `/tools` | List available MCP tools |
+| `/servers` | Show connected MCP servers |
 | `/sleep [secs]` | Test spinner animation (default: 3 seconds) |
 | `/help` | List available commands |
 
@@ -78,6 +90,47 @@ Select a session (0 for new, or number):
 - `Enter` - Send message
 - `Ctrl+D` - End session gracefully
 - `Ctrl+C` - Immediate shutdown
+
+## MCP (Model Context Protocol)
+
+Gopus supports MCP for connecting to external tools. When MCP is enabled and servers are configured, the AI can use tools to:
+
+- Read and write files
+- Execute commands
+- Query databases
+- Access web APIs
+- And more...
+
+### Tool Confirmation
+
+The `tool_confirmation` setting controls when you're prompted before tool execution:
+
+| Setting | Behavior |
+|---------|----------|
+| `always` | Always ask before executing any tool |
+| `never` | Execute tools automatically without asking |
+| `ask` | Ask based on tool characteristics (default) |
+
+### Example MCP Servers
+
+```yaml
+mcp:
+  enabled: true
+  servers:
+    # Filesystem access
+    - name: "filesystem"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/dir"]
+      enabled: true
+    
+    # GitHub integration
+    - name: "github"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-github"]
+      env:
+        GITHUB_TOKEN: "your-token"
+      enabled: true
+```
 
 ## Summarization
 
@@ -103,6 +156,7 @@ gopus/
 │   ├── chat/          # Chat loop and commands
 │   ├── config/        # Configuration loading
 │   ├── history/       # Session management and storage
+│   ├── mcp/           # MCP client for external tools
 │   ├── openai/        # API client (oapi-codegen generated)
 │   ├── printer/       # Output formatting
 │   ├── signal/        # Signal handling
@@ -118,10 +172,11 @@ See [`docs/dependency-diagram.md`](docs/dependency-diagram.md) for the full pack
 | Package | Purpose | Key Types |
 |---------|---------|-----------|
 | **main** | Application entry point, orchestrates startup | - |
-| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig` |
+| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig`, `MCPConfig` |
 | **openai** | OpenAI API client (generated via oapi-codegen) | `ChatClient`, `ChatCompletionRequestMessage` |
 | **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
 | **chat** | Interactive chat loop with slash commands | `ChatLoop` |
+| **mcp** | MCP client for external tool integration | `Client`, `Registry`, `Tool`, `Transport` |
 | **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
 | **canvas** | Braille-based terminal drawing canvas | `Canvas` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |

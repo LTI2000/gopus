@@ -82,10 +82,11 @@ func TestMessagesFromOpenAILengthPreservation(t *testing.T) {
 	property := func(count uint8) bool {
 		// Create a slice of OpenAI messages
 		messages := make([]openai.ChatCompletionRequestMessage, int(count))
+		testContent := "test"
 		for i := range messages {
 			messages[i] = openai.ChatCompletionRequestMessage{
 				Role:    openai.ChatCompletionRequestMessageRoleUser,
-				Content: "test",
+				Content: &testContent,
 			}
 		}
 
@@ -185,8 +186,8 @@ func TestToOpenAIContentPreservation(t *testing.T) {
 
 		openaiMsg := m.ToOpenAI()
 
-		// Property: Content is preserved
-		return openaiMsg.Content == content
+		// Property: Content is preserved (dereference pointer)
+		return openaiMsg.Content != nil && *openaiMsg.Content == content
 	}
 
 	if err := quick.Check(property, nil); err != nil {

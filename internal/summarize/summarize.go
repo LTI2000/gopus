@@ -122,14 +122,15 @@ func (s *Summarizer) SummarizeMessages(ctx context.Context, messages []history.M
 	}
 
 	// Create the summarization request
+	userContent := conversationBuilder.String()
 	apiMessages := []openai.ChatCompletionRequestMessage{
 		{
 			Role:    openai.RoleSystem,
-			Content: prompt,
+			Content: &prompt,
 		},
 		{
 			Role:    openai.RoleUser,
-			Content: conversationBuilder.String(),
+			Content: &userContent,
 		},
 	}
 

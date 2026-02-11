@@ -57,5 +57,41 @@ summarization:
   #   - Main topics covered
   #   - Critical facts or decisions
   #   - Essential context
-  #   
+  #
   #   Be extremely brief - this is long-term memory. Write in third person.
+
+# MCP (Model Context Protocol) settings for external tools (optional)
+mcp:
+  # Enable MCP support (optional, default: false)
+  enabled: false
+  
+  # Tool confirmation behavior (optional, default: "ask")
+  # - "always": Always ask before executing any tool
+  # - "never": Execute tools automatically without asking
+  # - "ask": Ask based on tool characteristics
+  tool_confirmation: "ask"
+  
+  # Default timeout for MCP requests in seconds (optional, default: 30)
+  default_timeout: 30
+  
+  # List of MCP servers to connect to (optional)
+  servers:
+    # Example: Filesystem access server
+    # - name: "filesystem"
+    #   command: "npx"
+    #   args: ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+    #   enabled: true
+    
+    # Example: GitHub integration server
+    # - name: "github"
+    #   command: "npx"
+    #   args: ["-y", "@modelcontextprotocol/server-github"]
+    #   env:
+    #     GITHUB_TOKEN: "your-github-token"
+    #   enabled: true
+    
+    # Example: SQLite database server
+    # - name: "sqlite"
+    #   command: "npx"
+    #   args: ["-y", "@modelcontextprotocol/server-sqlite", "/path/to/database.db"]
+    #   enabled: true
