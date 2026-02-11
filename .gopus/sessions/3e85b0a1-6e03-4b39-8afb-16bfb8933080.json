@@ -1,0 +1,28 @@
+{
+  "id": "3e85b0a1-6e03-4b39-8afb-16bfb8933080",
+  "name": "You act as an AI consultant. Help me to figure ...",
+  "created_at": "2026-02-11T20:38:03.64058+01:00",
+  "updated_at": "2026-02-11T21:06:56.398544+01:00",
+  "messages": [
+    {
+      "role": "user",
+      "content": "You act as an AI consultant. Help me to figure out how to automate my job as a software engineer.",
+      "created_at": "0001-01-01T00:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "# AI Automation Consultant: Software Engineer Role\n\nGreat question! Let's approach this systematically. Automation isn't about replacing yourself—it's about amplifying your impact and eliminating tedious work.\n\n## First, let's map your work\n\n**Tell me more about your specific situation:**\n\n1. **What's your primary focus?** (backend, frontend, full-stack, DevOps, ML, mobile, etc.)\n2. **What takes up most of your time?** (coding, reviews, meetings, debugging, docs, etc.)\n3. **What do you find most repetitive or tedious?**\n\n---\n\n## Common Automation Opportunities\n\nWhile you think about that, here's a framework:\n\n### 🟢 High Automation Potential\n| Task | Tools/Approaches |\n|------|------------------|\n| Boilerplate code | AI coding assistants (Copilot, Cursor, Claude) |\n| Unit test generation | AI + test frameworks |\n| Code review (first pass) | AI review tools, linters, static analysis |\n| Documentation | AI-generated docs, docstring automation |\n| Commit messages | Git hooks + AI |\n| Dependency updates | Dependabot, Renovate |\n\n### 🟡 Partial Automation\n- Debugging (AI can suggest, you verify)\n- Refactoring (AI-assisted with human judgment)\n- API integrations (templates + AI)\n\n### 🔴 Hard to Automate (Your value-add)\n- Architecture decisions\n- Stakeholder communication\n- Novel problem-solving\n- Mentoring\n\n---\n\n**What resonates most with your daily work?**",
+      "created_at": "0001-01-01T00:00:00Z"
+    },
+    {
+      "role": "user",
+      "content": "backend, meetings",
+      "created_at": "0001-01-01T00:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "# Backend + Meetings Automation\n\nGood combo to optimize—these have different automation strategies.\n\n---\n\n## 🔧 Backend Development\n\n**What's your stack?** (This helps me get specific)\n\nIn the meantime, high-impact automations:\n\n### Code Generation \u0026 Assistance\n| Task | Automation Approach |\n|------|---------------------|\n| CRUD endpoints | AI scaffolding / code generators |\n| Database migrations | Schema diff tools + AI |\n| API boilerplate | OpenAPI spec → code generators |\n| Input validation | Schema-driven generation |\n| Error handling | Templates + snippets |\n\n### Testing \u0026 Quality\n- **Unit tests**: AI generates from function signatures\n- **Integration tests**: Record/replay tools, AI-assisted\n- **Load testing**: Scripted pipelines (k6, Locust)\n\n### DevOps/Maintenance\n- CI/CD pipelines (GitHub Actions, etc.)\n- Log analysis with AI summarization\n- Alerting rules that auto-triage\n\n---\n\n## 📅 Meetings\n\nThis is often the hidden time sink. Options:\n\n### Reduce\n- Async standups (Slack bots, Loom videos)\n- \"Could this be an email?\" filter\n\n### Automate During\n- **Transcription + notes**: Fireflies, Otter, Granola, tl;dv\n- **Action item extraction**: AI summaries post-meeting\n\n### Automate After\n- Auto-generate tickets from meeting notes\n- Summary distribution to stakeholders\n\n---\n\n## Quick Wins to Start\n\n1. **Install an AI coding assistant** if you haven't\n2. **Pick one meeting type** to make async\n3. **Try a meeting transcription tool** for one week\n\n---\n\n**What backend stack are you on, and what type of meetings drain you most?** (standups, planning, 1:1s, cross-team sync?)",
+      "created_at": "0001-01-01T00:00:00Z"
+    }
+  ]
+}
