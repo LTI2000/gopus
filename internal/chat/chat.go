@@ -198,7 +198,7 @@ func (c *ChatLoop) processConversation(ctx context.Context, chatHistory *[]opena
 
 // getOpenAITools converts MCP tools to OpenAI format.
 func (c *ChatLoop) getOpenAITools() []openai.ChatCompletionTool {
-	if c.mcpClient == nil || !c.config.MCP.Enabled {
+	if c.mcpClient == nil {
 		return nil
 	}
 

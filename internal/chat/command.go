@@ -160,11 +160,6 @@ func (c *ChatLoop) handleTools() {
 		return
 	}
 
-	if !c.config.MCP.Enabled {
-		fmt.Println("MCP is disabled in configuration.")
-		return
-	}
-
 	tools := c.mcpClient.Registry().ListTools()
 	if len(tools) == 0 {
 		fmt.Println("No tools available.")
@@ -185,11 +180,6 @@ func (c *ChatLoop) handleTools() {
 func (c *ChatLoop) handleServers() {
 	if c.mcpClient == nil {
 		fmt.Println("MCP is not configured.")
-		return
-	}
-
-	if !c.config.MCP.Enabled {
-		fmt.Println("MCP is disabled in configuration.")
 		return
 	}
 

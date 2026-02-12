@@ -44,7 +44,6 @@ type OpenAIConfig struct {
 
 // MCPConfig contains MCP client settings.
 type MCPConfig struct {
-	Enabled          bool              `yaml:"enabled"`           // Enable MCP support
 	ToolConfirmation string            `yaml:"tool_confirmation"` // "always", "never", or "ask"
 	DefaultTimeout   int               `yaml:"default_timeout"`   // Timeout in seconds for MCP requests
 	Servers          []MCPServerConfig `yaml:"servers"`           // List of MCP servers to connect to
@@ -85,7 +84,6 @@ const (
 	defaultSummarizationAutoThreshold  = 100
 
 	// MCP defaults
-	defaultMCPEnabled          = true // Enabled by default
 	defaultMCPToolConfirmation = ToolConfirmationAsk
 	defaultMCPDefaultTimeout   = 30 // seconds
 )
@@ -201,15 +199,6 @@ func (c *Config) applyMCPDefaults() {
 	if c.MCP.DefaultTimeout == 0 {
 		c.MCP.DefaultTimeout = defaultMCPDefaultTimeout
 	}
-
-	// Enable MCP if servers are configured
-	if len(c.MCP.Servers) > 0 && !c.MCP.Enabled {
-		// Don't auto-enable, but this is where we could
-	}
-
-	// Note: We don't auto-enable servers because YAML unmarshaling sets bool
-	// to false by default, so we can't distinguish between "not set" and
-	// "explicitly set to false". Users must set enabled: true explicitly.
 }
 
 // validate checks that all required configuration fields are present.
