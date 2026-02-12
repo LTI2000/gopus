@@ -55,18 +55,17 @@ func main0(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	// Create and run the chat loop
-	chatLoop := chat.NewChatLoop(client, historyManager, cfg)
-
 	// Initialize MCP client
 	mcpClient, err := initMCPClient(ctx, cfg.MCP)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP client: %v\n", err)
 		// Continue without MCP support
 	} else {
-		chatLoop.SetMCPClient(mcpClient)
 		defer mcpClient.Close()
 	}
+
+	// Create and run the chat loop
+	chatLoop := chat.NewChatLoop(client, historyManager, mcpClient, cfg)
 
 	chatLoop.Run(ctx, scanner)
 

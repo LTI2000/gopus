@@ -27,18 +27,14 @@ type ChatLoop struct {
 }
 
 // NewChatLoop creates a new chat loop with the given dependencies.
-func NewChatLoop(client *openai.ChatClient, historyManager *history.Manager, cfg *config.Config) *ChatLoop {
+func NewChatLoop(client *openai.ChatClient, historyManager *history.Manager, mcpClient *mcp.Client, cfg *config.Config) *ChatLoop {
 	return &ChatLoop{
 		client:         client,
 		historyManager: historyManager,
 		summarizer:     summarize.New(client, cfg.Summarization),
+		mcpClient:      mcpClient,
 		config:         cfg,
 	}
-}
-
-// SetMCPClient sets the MCP client for tool support.
-func (c *ChatLoop) SetMCPClient(mcpClient *mcp.Client) {
-	c.mcpClient = mcpClient
 }
 
 // Run runs the main chat loop, reading user input and sending requests to OpenAI.
