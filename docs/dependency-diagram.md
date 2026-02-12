@@ -10,6 +10,7 @@ flowchart TB
         yaml["gopkg.in/yaml.v3"]
         uuid["github.com/google/uuid"]
         oapi["oapi-codegen"]
+        mcpgo["github.com/mark3labs/mcp-go"]
     end
 
     subgraph Main["🚀 Application Entry"]
@@ -25,6 +26,7 @@ flowchart TB
             • Config struct
             • OpenAIConfig
             • SummarizationConfig
+            • MCPConfig
             • Load/LoadDefault"]
             
             openai["openai
@@ -33,6 +35,13 @@ flowchart TB
             • ChatCompletion()
             • Generated types
             • API error handling"]
+            
+            mcp["mcp
+            ━━━━━━━━━━━━━━
+            • Manager
+            • ToolInfo
+            • AddServer()
+            • CallTool()"]
         end
         
         subgraph Data["💾 Data Layer"]
@@ -52,7 +61,8 @@ flowchart TB
             • Run()
             • handleCommand()
             • /summarize, /stats
-            • /sleep, /help"]
+            • /sleep, /help
+            • CircleAnimation"]
             
             summarize["summarize
             ━━━━━━━━━━━━━━
@@ -76,13 +86,19 @@ flowchart TB
             • PrintError()
             • ANSI colors"]
             
-            spinner["spinner
+            animator["animator
             ━━━━━━━━━━━━━━
-            • Spinner
+            • Animator
             • Animation interface
-            • CircleAnimation
-            • Start/Stop/Render
-            • Uses canvas"]
+            • Start/Stop
+            • Frame timing"]
+            
+            table["table
+            ━━━━━━━━━━━━━━
+            • Table
+            • Column
+            • Alignment
+            • Render()"]
         end
         
         subgraph System["🔧 System"]
@@ -100,31 +116,32 @@ flowchart TB
     main --> history
     main --> chat
     main --> signal
+    main --> mcp
 
     %% Chat dependencies
     chat --> config
     chat --> history
     chat --> openai
     chat --> printer
-    chat --> spinner
     chat --> summarize
+    chat --> mcp
+    chat --> animator
+    chat --> canvas
 
     %% Summarize dependencies
     summarize --> config
     summarize --> history
     summarize --> openai
 
-    %% Spinner dependencies
-    spinner --> canvas
-
     %% History dependencies
-    history --> openai
-    history --> printer
     history --> uuid
 
     %% OpenAI dependencies
     openai --> config
     openai -.-> oapi
+
+    %% MCP dependencies
+    mcp --> mcpgo
 
     %% Config dependencies
     config --> yaml
@@ -139,12 +156,12 @@ flowchart TB
     classDef externalNode fill:#78909c,stroke:#37474f,stroke-width:1px,color:#fff
 
     class main mainNode
-    class config,openai coreNode
+    class config,openai,mcp coreNode
     class history dataNode
     class chat,summarize featureNode
-    class canvas,printer,spinner uiNode
+    class canvas,printer,animator,table uiNode
     class signal systemNode
-    class yaml,uuid,oapi externalNode
+    class yaml,uuid,oapi,mcpgo externalNode
 ```
 
 ## Package Descriptions
@@ -152,12 +169,14 @@ flowchart TB
 | Package | Purpose | Key Types |
 |---------|---------|-----------|
 | **main** | Application entry point, orchestrates startup | - |
-| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig` |
+| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig`, `MCPConfig` |
 | **openai** | OpenAI API client (generated via oapi-codegen) | `ChatClient`, `ChatCompletionRequestMessage` |
+| **mcp** | MCP server management using mark3labs/mcp-go | `Manager`, `ToolInfo` |
 | **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
-| **chat** | Interactive chat loop with slash commands | `ChatLoop` |
+| **chat** | Interactive chat loop with slash commands | `ChatLoop`, `CircleAnimation` |
 | **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
 | **canvas** | Braille-based terminal drawing canvas | `Canvas` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
-| **spinner** | Animated loading indicator (uses canvas) | `Spinner`, `Animation`, `CircleAnimation` |
+| **animator** | Animation timing and lifecycle management | `Animator`, `Animation` |
+| **table** | Terminal table rendering with column alignment | `Table`, `Column`, `Alignment` |
 | **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |
