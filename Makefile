@@ -9,9 +9,9 @@ BINARY_NAME := gopus
 GEN_CLIENT := internal/openai/client_gen.go
 GEN_MODELS := internal/openai/models_gen.go
 
-.PHONY: all generate build clean run
+.PHONY: all generate build clean run test
 
-all: generate build
+all: generate build test
 
 generate:
 	go generate $(GOFLAGS) ./...
@@ -26,3 +26,6 @@ clean:
 
 run: clean all
 	./$(BINARY_NAME)
+
+test:
+	go test $(GOFLAGS) ./...
