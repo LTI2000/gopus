@@ -54,17 +54,17 @@ func main0(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	// Initialize MCP client
-	mcpClient, err := initMCPClient(ctx, cfg.MCP)
+	// Initialize MCP manager
+	mcpManager, err := initMCPManager(ctx, cfg.MCP)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP client: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP manager: %v\n", err)
 		// Continue without MCP support
 	} else {
-		defer mcpClient.Close()
+		defer mcpManager.Close()
 	}
 
 	// Create and run the chat loop
-	chatLoop := chat.NewChatLoop(client, historyManager, mcpClient, cfg)
+	chatLoop := chat.NewChatLoop(client, historyManager, mcpManager, cfg)
 
 	chatLoop.Run(ctx, scanner)
 
@@ -75,8 +75,8 @@ func main0(ctx context.Context) {
 	}
 }
 
-// initMCPClient creates and initializes the MCP manager with configured servers.
-func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager, error) {
+// initMCPManager creates and initializes the MCP manager with configured servers.
+func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager, error) {
 	// Create the MCP manager
 	manager := mcp.NewManager()
 
