@@ -6,10 +6,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"gopus/internal/chat"
 	"gopus/internal/config"
 	"gopus/internal/history"
+	"gopus/internal/mcp"
 	"gopus/internal/openai"
 	"gopus/internal/signal"
 )
@@ -55,6 +57,19 @@ func main0(ctx context.Context) {
 
 	// Create and run the chat loop
 	chatLoop := chat.NewChatLoop(client, historyManager, cfg)
+
+	// Initialize MCP client if enabled
+	if cfg.MCP.Enabled {
+		mcpClient, err := initMCPClient(ctx, cfg.MCP)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP client: %v\n", err)
+			// Continue without MCP support
+		} else {
+			chatLoop.SetMCPClient(mcpClient)
+			defer mcpClient.Close()
+		}
+	}
+
 	chatLoop.Run(ctx, scanner)
 
 	// Check for scanner errors
@@ -62,4 +77,58 @@ func main0(ctx context.Context) {
 		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// initMCPClient creates and initializes the MCP client with configured servers.
+func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Client, error) {
+	// Create MCP client config
+	clientConfig := mcp.DefaultClientConfig()
+	if mcpCfg.DefaultTimeout > 0 {
+		clientConfig.DefaultTimeout = time.Duration(mcpCfg.DefaultTimeout) * time.Second
+	}
+
+	// Create the MCP client
+	mcpClient := mcp.NewClient(clientConfig)
+
+	// Connect to each enabled server
+	connectedServers := 0
+	for _, serverCfg := range mcpCfg.Servers {
+		if !serverCfg.Enabled {
+			continue
+		}
+
+		// Convert env map to slice format
+		var envSlice []string
+		for k, v := range serverCfg.Env {
+			envSlice = append(envSlice, fmt.Sprintf("%s=%s", k, v))
+		}
+
+		// Create stdio transport for this server
+		transport := mcp.NewStdioTransport(mcp.StdioConfig{
+			Command: serverCfg.Command,
+			Args:    serverCfg.Args,
+			Env:     envSlice,
+			WorkDir: serverCfg.WorkDir,
+		})
+
+		// Add the server
+		if err := mcpClient.AddServer(ctx, serverCfg.Name, transport); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to connect to MCP server %q: %v\n", serverCfg.Name, err)
+			continue
+		}
+
+		fmt.Printf("Connected to MCP server: %s\n", serverCfg.Name)
+		connectedServers++
+	}
+
+	if connectedServers == 0 && len(mcpCfg.Servers) > 0 {
+		return nil, fmt.Errorf("no MCP servers connected successfully")
+	}
+
+	if connectedServers > 0 {
+		fmt.Printf("MCP: %d server(s) connected, %d tool(s) available\n",
+			connectedServers, len(mcpClient.Registry().ListTools()))
+	}
+
+	return mcpClient, nil
 }
