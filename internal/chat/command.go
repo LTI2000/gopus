@@ -155,12 +155,12 @@ func (c *ChatLoop) handleSleep(args string) {
 
 // handleTools shows available MCP tools.
 func (c *ChatLoop) handleTools() {
-	if c.mcpClient == nil {
+	if c.mcpManager == nil {
 		fmt.Println("MCP is not configured.")
 		return
 	}
 
-	tools := c.mcpClient.Registry().ListTools()
+	tools := c.mcpManager.ListTools()
 	if len(tools) == 0 {
 		fmt.Println("No tools available.")
 		return
@@ -168,7 +168,7 @@ func (c *ChatLoop) handleTools() {
 
 	fmt.Println("\n=== Available Tools ===")
 	for _, tool := range tools {
-		fmt.Printf("  %s (%s)\n", tool.Name, tool.ServerID)
+		fmt.Printf("  %s\n", tool.Name)
 		if tool.Description != "" {
 			fmt.Printf("    %s\n", tool.Description)
 		}
@@ -178,49 +178,20 @@ func (c *ChatLoop) handleTools() {
 
 // handleServers shows connected MCP servers.
 func (c *ChatLoop) handleServers() {
-	if c.mcpClient == nil {
+	if c.mcpManager == nil {
 		fmt.Println("MCP is not configured.")
 		return
 	}
 
-	servers := c.mcpClient.ListServers()
-	if len(servers) == 0 {
+	serverCount := c.mcpManager.ServerCount()
+	if serverCount == 0 {
 		fmt.Println("No MCP servers connected.")
 		return
 	}
 
 	fmt.Println("\n=== Connected MCP Servers ===")
-	for _, server := range servers {
-		stateStr := "unknown"
-		switch server.State {
-		case 0: // StateDisconnected
-			stateStr = "disconnected"
-		case 1: // StateConnecting
-			stateStr = "connecting"
-		case 2: // StateConnected
-			stateStr = "connected"
-		case 3: // StateError
-			stateStr = "error"
-		}
-
-		fmt.Printf("  %s (%s)\n", server.ID, stateStr)
-		if server.ServerInfo.Name != "" {
-			fmt.Printf("    Server: %s v%s\n", server.ServerInfo.Name, server.ServerInfo.Version)
-		}
-		if server.LastError != nil {
-			fmt.Printf("    Error: %v\n", server.LastError)
-		}
-
-		// Count tools from this server
-		toolCount := 0
-		for _, tool := range c.mcpClient.Registry().ListTools() {
-			if tool.ServerID == server.ID {
-				toolCount++
-			}
-		}
-		fmt.Printf("    Tools: %d\n", toolCount)
-	}
-	fmt.Printf("\nTotal: %d server(s)\n\n", len(servers))
+	fmt.Printf("Total: %d server(s) connected\n", serverCount)
+	fmt.Printf("Total tools: %d\n\n", c.mcpManager.ToolCount())
 }
 
 // handleHelp shows available commands.

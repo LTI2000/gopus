@@ -15,6 +15,8 @@ import (
 	"gopus/internal/openai"
 	"gopus/internal/printer"
 	"gopus/internal/summarize"
+
+	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
 
 // ChatLoop holds the dependencies for the chat loop.
@@ -22,17 +24,17 @@ type ChatLoop struct {
 	client         *openai.ChatClient
 	historyManager *history.Manager
 	summarizer     *summarize.Summarizer
-	mcpClient      *mcp.Client
+	mcpManager     *mcp.Manager
 	config         *config.Config
 }
 
 // NewChatLoop creates a new chat loop with the given dependencies.
-func NewChatLoop(client *openai.ChatClient, historyManager *history.Manager, mcpClient *mcp.Client, cfg *config.Config) *ChatLoop {
+func NewChatLoop(client *openai.ChatClient, historyManager *history.Manager, mcpManager *mcp.Manager, cfg *config.Config) *ChatLoop {
 	return &ChatLoop{
 		client:         client,
 		historyManager: historyManager,
 		summarizer:     summarize.New(client, cfg.Summarization),
-		mcpClient:      mcpClient,
+		mcpManager:     mcpManager,
 		config:         cfg,
 	}
 }
@@ -194,11 +196,11 @@ func (c *ChatLoop) processConversation(ctx context.Context, chatHistory *[]opena
 
 // getOpenAITools converts MCP tools to OpenAI format.
 func (c *ChatLoop) getOpenAITools() []openai.ChatCompletionTool {
-	if c.mcpClient == nil {
+	if c.mcpManager == nil {
 		return nil
 	}
 
-	mcpTools := c.mcpClient.Registry().ListTools()
+	mcpTools := c.mcpManager.ListTools()
 	if len(mcpTools) == 0 {
 		return nil
 	}
@@ -206,13 +208,15 @@ func (c *ChatLoop) getOpenAITools() []openai.ChatCompletionTool {
 	tools := make([]openai.ChatCompletionTool, 0, len(mcpTools))
 	for _, tool := range mcpTools {
 		// Convert MCP tool schema to OpenAI format
-		// Parse the JSON schema into a map
+		// Marshal the InputSchema to JSON and unmarshal to map[string]interface{}
+		schemaBytes, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			continue // Skip tools with invalid schemas
+		}
+
 		var params map[string]interface{}
-		if len(tool.InputSchema) > 0 {
-			if err := json.Unmarshal(tool.InputSchema, &params); err != nil {
-				// Skip tools with invalid schemas
-				continue
-			}
+		if err := json.Unmarshal(schemaBytes, &params); err != nil {
+			continue // Skip tools with invalid schemas
 		}
 
 		tools = append(tools, openai.ChatCompletionTool{
@@ -266,18 +270,20 @@ func (c *ChatLoop) buildToolResultMessage(toolCallID, content string) openai.Cha
 
 // executeToolCall executes a single tool call via MCP.
 func (c *ChatLoop) executeToolCall(ctx context.Context, toolCall openai.ChatCompletionMessageToolCall) (string, error) {
-	if c.mcpClient == nil {
-		return "", fmt.Errorf("MCP client not configured")
+	if c.mcpManager == nil {
+		return "", fmt.Errorf("MCP manager not configured")
 	}
 
-	// Parse the arguments
-	var args json.RawMessage
+	// Parse the arguments into map[string]any
+	var args map[string]any
 	if toolCall.Function.Arguments != "" {
-		args = json.RawMessage(toolCall.Function.Arguments)
+		if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+			return "", fmt.Errorf("failed to parse tool arguments: %w", err)
+		}
 	}
 
 	// Call the tool
-	result, err := c.mcpClient.CallTool(ctx, toolCall.Function.Name, args)
+	result, err := c.mcpManager.CallTool(ctx, toolCall.Function.Name, args)
 	if err != nil {
 		return "", err
 	}
@@ -291,14 +297,24 @@ func (c *ChatLoop) executeToolCall(ctx context.Context, toolCall openai.ChatComp
 }
 
 // formatToolContent formats tool result content for display.
-func (c *ChatLoop) formatToolContent(content []mcp.ToolContent) string {
+func (c *ChatLoop) formatToolContent(content []mcplib.Content) string {
 	var parts []string
 	for _, item := range content {
-		switch item.Type {
-		case "text":
-			parts = append(parts, item.Text)
+		switch c := item.(type) {
+		case mcplib.TextContent:
+			parts = append(parts, c.Text)
+		case *mcplib.TextContent:
+			parts = append(parts, c.Text)
+		case mcplib.ImageContent:
+			parts = append(parts, "[image content]")
+		case *mcplib.ImageContent:
+			parts = append(parts, "[image content]")
+		case mcplib.AudioContent:
+			parts = append(parts, "[audio content]")
+		case *mcplib.AudioContent:
+			parts = append(parts, "[audio content]")
 		default:
-			parts = append(parts, fmt.Sprintf("[%s content]", item.Type))
+			parts = append(parts, "[unknown content]")
 		}
 	}
 	return strings.Join(parts, "\n")

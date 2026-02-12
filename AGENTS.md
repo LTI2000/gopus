@@ -24,6 +24,7 @@ go test ./internal/canvas/...  # Run single package tests
 - **Spinner pattern**: Long-running operations use [`WithSpinner()`](internal/chat/spinner.go:1) wrapper for animated feedback.
 - **Message types**: History distinguishes between regular messages and summaries via [`MessageType`](internal/history/message.go:19) field.
 - **Braille canvas**: [`internal/canvas`](internal/canvas/canvas.go:1) uses Unicode braille characters for terminal graphics (2x4 pixel cells per character).
+- **MCP integration**: Uses [`github.com/mark3labs/mcp-go`](https://github.com/mark3labs/mcp-go) library for Model Context Protocol support. The [`mcp.Manager`](internal/mcp/manager.go:23) wraps the library to manage multiple MCP servers and their tools. Configure servers in `config.yaml` under `mcp.servers`.
 
 ## Code Style
 

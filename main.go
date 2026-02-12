@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"gopus/internal/chat"
 	"gopus/internal/config"
@@ -76,16 +75,10 @@ func main0(ctx context.Context) {
 	}
 }
 
-// initMCPClient creates and initializes the MCP client with configured servers.
-func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Client, error) {
-	// Create MCP client config
-	clientConfig := mcp.DefaultClientConfig()
-	if mcpCfg.DefaultTimeout > 0 {
-		clientConfig.DefaultTimeout = time.Duration(mcpCfg.DefaultTimeout) * time.Second
-	}
-
-	// Create the MCP client
-	mcpClient := mcp.NewClient(clientConfig)
+// initMCPClient creates and initializes the MCP manager with configured servers.
+func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager, error) {
+	// Create the MCP manager
+	manager := mcp.NewManager()
 
 	// Connect to each enabled server
 	connectedServers := 0
@@ -100,16 +93,8 @@ func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Client, e
 			envSlice = append(envSlice, fmt.Sprintf("%s=%s", k, v))
 		}
 
-		// Create stdio transport for this server
-		transport := mcp.NewStdioTransport(mcp.StdioConfig{
-			Command: serverCfg.Command,
-			Args:    serverCfg.Args,
-			Env:     envSlice,
-			WorkDir: serverCfg.WorkDir,
-		})
-
-		// Add the server
-		if err := mcpClient.AddServer(ctx, serverCfg.Name, transport); err != nil {
+		// Add the server (uses stdio transport internally)
+		if err := manager.AddServer(ctx, serverCfg.Name, serverCfg.Command, envSlice, serverCfg.Args...); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Failed to connect to MCP server %q: %v\n", serverCfg.Name, err)
 			continue
 		}
@@ -124,8 +109,8 @@ func initMCPClient(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Client, e
 
 	if connectedServers > 0 {
 		fmt.Printf("MCP: %d server(s) connected, %d tool(s) available\n",
-			connectedServers, len(mcpClient.Registry().ListTools()))
+			connectedServers, manager.ToolCount())
 	}
 
-	return mcpClient, nil
+	return manager, nil
 }
