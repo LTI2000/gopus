@@ -85,7 +85,7 @@ const (
 	defaultSummarizationAutoThreshold  = 100
 
 	// MCP defaults
-	defaultMCPEnabled          = false // Disabled by default until servers are configured
+	defaultMCPEnabled          = true // Enabled by default
 	defaultMCPToolConfirmation = ToolConfirmationAsk
 	defaultMCPDefaultTimeout   = 30 // seconds
 )

@@ -62,8 +62,8 @@ summarization:
 
 # MCP (Model Context Protocol) settings for external tools (optional)
 mcp:
-  # Enable MCP support (optional, default: false)
-  enabled: false
+  # Enable MCP support (optional, default: true)
+  enabled: true
   
   # Tool confirmation behavior (optional, default: "ask")
   # - "always": Always ask before executing any tool
