@@ -5,12 +5,85 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/client/transport"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
+
+// DebugTransport wraps a transport.Interface to log JSON-RPC messages.
+type DebugTransport struct {
+	inner    transport.Interface
+	serverID string
+}
+
+// NewDebugTransport creates a new debug transport wrapper.
+func NewDebugTransport(inner transport.Interface, serverID string) *DebugTransport {
+	return &DebugTransport{
+		inner:    inner,
+		serverID: serverID,
+	}
+}
+
+// Start starts the underlying transport.
+func (d *DebugTransport) Start(ctx context.Context) error {
+	return d.inner.Start(ctx)
+}
+
+// Close closes the underlying transport.
+func (d *DebugTransport) Close() error {
+	return d.inner.Close()
+}
+
+// GetSessionId returns the session ID from the underlying transport.
+func (d *DebugTransport) GetSessionId() string {
+	return d.inner.GetSessionId()
+}
+
+// SetNotificationHandler sets the notification handler on the underlying transport.
+func (d *DebugTransport) SetNotificationHandler(handler func(notification mcplib.JSONRPCNotification)) {
+	// Wrap the handler to log notifications
+	d.inner.SetNotificationHandler(func(notification mcplib.JSONRPCNotification) {
+		if data, err := json.Marshal(notification); err == nil {
+			fmt.Fprintf(os.Stderr, "[MCP:%s] <- NOTIFICATION: %s\n", d.serverID, string(data))
+		}
+		if handler != nil {
+			handler(notification)
+		}
+	})
+}
+
+// SendRequest sends a request and logs it along with the response.
+func (d *DebugTransport) SendRequest(ctx context.Context, request transport.JSONRPCRequest) (*transport.JSONRPCResponse, error) {
+	if data, err := json.Marshal(request); err == nil {
+		fmt.Fprintf(os.Stderr, "[MCP:%s] -> REQUEST: %s\n", d.serverID, string(data))
+	}
+
+	resp, err := d.inner.SendRequest(ctx, request)
+
+	if resp != nil {
+		if data, err := json.Marshal(resp); err == nil {
+			fmt.Fprintf(os.Stderr, "[MCP:%s] <- RESPONSE: %s\n", d.serverID, string(data))
+		}
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[MCP:%s] <- ERROR: %v\n", d.serverID, err)
+	}
+
+	return resp, err
+}
+
+// SendNotification sends a notification and logs it.
+func (d *DebugTransport) SendNotification(ctx context.Context, notification mcplib.JSONRPCNotification) error {
+	if data, err := json.Marshal(notification); err == nil {
+		fmt.Fprintf(os.Stderr, "[MCP:%s] -> NOTIFICATION: %s\n", d.serverID, string(data))
+	}
+	return d.inner.SendNotification(ctx, notification)
+}
 
 // ToolInfo contains tool metadata with server association.
 type ToolInfo struct {
@@ -24,6 +97,7 @@ type Manager struct {
 	mu      sync.RWMutex
 	clients map[string]*client.Client
 	tools   map[string]ToolInfo // tool name -> tool info
+	debug   bool                // Enable debug logging for JSON-RPC messages
 }
 
 // NewManager creates a new MCP manager.
@@ -31,6 +105,15 @@ func NewManager() *Manager {
 	return &Manager{
 		clients: make(map[string]*client.Client),
 		tools:   make(map[string]ToolInfo),
+	}
+}
+
+// NewManagerWithDebug creates a new MCP manager with debug logging enabled.
+func NewManagerWithDebug(debug bool) *Manager {
+	return &Manager{
+		clients: make(map[string]*client.Client),
+		tools:   make(map[string]ToolInfo),
+		debug:   debug,
 	}
 }
 
@@ -44,10 +127,23 @@ func (m *Manager) AddServer(ctx context.Context, id, command string, env []strin
 		return fmt.Errorf("server %s already exists", id)
 	}
 
-	// Create the stdio client
-	c, err := client.NewStdioMCPClient(command, env, args...)
-	if err != nil {
-		return fmt.Errorf("failed to create client for %s: %w", id, err)
+	// Create the stdio client with optional debug logging
+	var c *client.Client
+	var err error
+
+	if m.debug {
+		// Create stdio transport, start it, and wrap it with debug logging
+		stdioTransport := transport.NewStdio(command, env, args...)
+		if err := stdioTransport.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start stdio transport for %s: %w", id, err)
+		}
+		debugTransport := NewDebugTransport(stdioTransport, id)
+		c = client.NewClient(debugTransport)
+	} else {
+		c, err = client.NewStdioMCPClient(command, env, args...)
+		if err != nil {
+			return fmt.Errorf("failed to create client for %s: %w", id, err)
+		}
 	}
 
 	// Initialize the client

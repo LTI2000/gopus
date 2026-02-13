@@ -46,6 +46,7 @@ type OpenAIConfig struct {
 type MCPConfig struct {
 	ToolConfirmation string            `yaml:"tool_confirmation"` // "always", "never", or "ask"
 	DefaultTimeout   int               `yaml:"default_timeout"`   // Timeout in seconds for MCP requests
+	Debug            bool              `yaml:"debug"`             // Enable debug logging for JSON-RPC messages
 	Servers          []MCPServerConfig `yaml:"servers"`           // List of MCP servers to connect to
 }
 

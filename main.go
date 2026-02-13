@@ -77,8 +77,12 @@ func main0(ctx context.Context) {
 
 // initMCPManager creates and initializes the MCP manager with configured servers.
 func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager, error) {
-	// Create the MCP manager
-	manager := mcp.NewManager()
+	// Create the MCP manager with optional debug logging
+	manager := mcp.NewManagerWithDebug(mcpCfg.Debug)
+
+	if mcpCfg.Debug {
+		fmt.Fprintln(os.Stderr, "MCP debug logging enabled - JSON-RPC messages will be displayed")
+	}
 
 	// Connect to each enabled server
 	connectedServers := 0

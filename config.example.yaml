@@ -71,6 +71,10 @@ mcp:
   # Default timeout for MCP requests in seconds (optional, default: 30)
   default_timeout: 30
   
+  # Enable debug logging for JSON-RPC messages (optional, default: false)
+  # When enabled, all MCP protocol messages will be logged to stderr
+  debug: false
+  
   # List of MCP servers to connect to (optional)
   servers:
     # Example: Filesystem access server
