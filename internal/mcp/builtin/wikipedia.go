@@ -25,13 +25,44 @@ func init() {
 				mcplib.Description("The search query"),
 			),
 		),
-		wikipediaToolHandlerFactory,
+		func(openaiClient *openai.ChatClient) mcp.ToolHandler {
+			return wikipediaToolHandler(openaiClient)
+		},
 	)
 }
 
-// wikipediaToolHandlerFactory creates a tool handler with access to the OpenAI client.
-func wikipediaToolHandlerFactory(openaiClient *openai.ChatClient) mcp.ToolHandler {
-	return wikipediaToolHandler(openaiClient)
+// wikipediaToolHandler returns a tool handler function that has access to the OpenAI client.
+// This pattern allows tools to use the OpenAI API while maintaining the required handler signature.
+func wikipediaToolHandler(openaiClient *openai.ChatClient) mcp.ToolHandler {
+	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		query, err := GetRequiredStringArg(req, "query")
+		if err != nil {
+			return nil, err
+		}
+
+		// Search Wikipedia for the article
+		title, content, err := searchWikipedia(ctx, query)
+		if err != nil {
+			return mcplib.NewToolResultError(fmt.Sprintf("Wikipedia search failed: %v", err)), nil
+		}
+
+		// If no OpenAI client is available, return the raw extract
+		if openaiClient == nil {
+			result := fmt.Sprintf("# %s\n\n%s", title, content)
+			return mcplib.NewToolResultText(result), nil
+		}
+
+		// Use OpenAI to generate a summary
+		summary, err := generateSummary(ctx, openaiClient, title, content)
+		if err != nil {
+			// Fall back to raw content if summary generation fails
+			result := fmt.Sprintf("# %s\n\n(Summary generation failed: %v)\n\n%s", title, err, content)
+			return mcplib.NewToolResultText(result), nil
+		}
+
+		result := fmt.Sprintf("# %s\n\n%s", title, summary)
+		return mcplib.NewToolResultText(result), nil
+	}
 }
 
 // wikipediaSearchResponse represents the Wikipedia API search response.
@@ -162,38 +193,4 @@ func generateSummary(ctx context.Context, client *openai.ChatClient, title, cont
 	}
 
 	return *resp.Choices[0].Message.Content, nil
-}
-
-// wikipediaToolHandler returns a tool handler function that has access to the OpenAI client.
-// This pattern allows tools to use the OpenAI API while maintaining the required handler signature.
-func wikipediaToolHandler(openaiClient *openai.ChatClient) func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-		query, err := GetRequiredStringArg(req, "query")
-		if err != nil {
-			return nil, err
-		}
-
-		// Search Wikipedia for the article
-		title, content, err := searchWikipedia(ctx, query)
-		if err != nil {
-			return mcplib.NewToolResultError(fmt.Sprintf("Wikipedia search failed: %v", err)), nil
-		}
-
-		// If no OpenAI client is available, return the raw extract
-		if openaiClient == nil {
-			result := fmt.Sprintf("# %s\n\n%s", title, content)
-			return mcplib.NewToolResultText(result), nil
-		}
-
-		// Use OpenAI to generate a summary
-		summary, err := generateSummary(ctx, openaiClient, title, content)
-		if err != nil {
-			// Fall back to raw content if summary generation fails
-			result := fmt.Sprintf("# %s\n\n(Summary generation failed: %v)\n\n%s", title, err, content)
-			return mcplib.NewToolResultText(result), nil
-		}
-
-		result := fmt.Sprintf("# %s\n\n%s", title, summary)
-		return mcplib.NewToolResultText(result), nil
-	}
 }
