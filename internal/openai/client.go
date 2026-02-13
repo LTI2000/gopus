@@ -118,43 +118,44 @@ func (e *APIError) Error() string {
 	return e.Message
 }
 
-// GetMessageContent is a convenience function that calls ChatCompletion and extracts
+// ChatCompletionX is a convenience function that calls ChatCompletion and extracts
 // the message content, handling all cases of empty choices or nil message content.
 // Returns ErrEmptyResponse if the response has no choices or empty content.
-func (c *ChatClient) GetMessageContent(ctx context.Context, messages []ChatCompletionRequestMessage) (string, error) {
+func (c *ChatClient) ChatCompletionX(ctx context.Context, messages []ChatCompletionRequestMessage) (string, error) {
 	resp, err := c.ChatCompletion(ctx, messages)
 	if err != nil {
 		return "", err
 	}
-	return ExtractMessageContent(resp)
+	return extractMessageContent(resp)
 }
 
 // ExtractMessageContent extracts the message content from a ChatCompletionResponse.
 // Returns ErrEmptyResponse if the response has no choices or empty content.
-func ExtractMessageContent(resp *ChatCompletionResponse) (string, error) {
-	if len(resp.Choices) == 0 {
+func extractMessageContent(resp *ChatCompletionResponse) (string, error) {
+	choice, err := extractFirstChoice(resp)
+	if err != nil {
+		return "", err
+	}
+	if choice == nil {
 		return "", ErrEmptyResponse
 	}
-	if resp.Choices[0].Message.Content == nil {
-		return "", ErrEmptyResponse
-	}
-	return *resp.Choices[0].Message.Content, nil
+	return *choice.Message.Content, nil
 }
 
-// GetFirstChoice is a convenience function that calls ChatCompletionWithTools and extracts
+// ChatCompletionWithToolsX is a convenience function that calls ChatCompletionWithTools and extracts
 // the first choice, handling the case of empty choices.
 // Returns ErrEmptyResponse if the response has no choices.
-func (c *ChatClient) GetFirstChoice(ctx context.Context, messages []ChatCompletionRequestMessage, tools []ChatCompletionTool) (*ChatCompletionChoice, error) {
+func (c *ChatClient) ChatCompletionWithToolsX(ctx context.Context, messages []ChatCompletionRequestMessage, tools []ChatCompletionTool) (*ChatCompletionChoice, error) {
 	resp, err := c.ChatCompletionWithTools(ctx, messages, tools)
 	if err != nil {
 		return nil, err
 	}
-	return ExtractFirstChoice(resp)
+	return extractFirstChoice(resp)
 }
 
 // ExtractFirstChoice extracts the first choice from a ChatCompletionResponse.
 // Returns ErrEmptyResponse if the response has no choices.
-func ExtractFirstChoice(resp *ChatCompletionResponse) (*ChatCompletionChoice, error) {
+func extractFirstChoice(resp *ChatCompletionResponse) (*ChatCompletionChoice, error) {
 	if len(resp.Choices) == 0 {
 		return nil, ErrEmptyResponse
 	}

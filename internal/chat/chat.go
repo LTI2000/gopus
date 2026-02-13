@@ -110,7 +110,7 @@ func (c *ChatLoop) processConversation(ctx context.Context, chatHistory *[]opena
 	for {
 		// Send request to OpenAI with spinner and extract first choice
 		choice, err := WithSpinner(func() (*openai.ChatCompletionChoice, error) {
-			return c.client.GetFirstChoice(ctx, *chatHistory, tools)
+			return c.client.ChatCompletionWithToolsX(ctx, *chatHistory, tools)
 		})
 
 		if err != nil {

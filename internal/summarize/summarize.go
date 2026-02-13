@@ -135,7 +135,7 @@ func (s *Summarizer) SummarizeMessages(ctx context.Context, messages []history.M
 	}
 
 	// Call OpenAI API
-	content, err := s.client.GetMessageContent(ctx, apiMessages)
+	content, err := s.client.ChatCompletionX(ctx, apiMessages)
 	if err != nil {
 		return history.Message{}, fmt.Errorf("failed to generate summary: %w", err)
 	}

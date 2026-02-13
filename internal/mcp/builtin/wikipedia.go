@@ -179,5 +179,5 @@ func generateSummary(ctx context.Context, client *openai.ChatClient, title, cont
 		},
 	}
 
-	return client.GetMessageContent(ctx, messages)
+	return client.ChatCompletionX(ctx, messages)
 }
