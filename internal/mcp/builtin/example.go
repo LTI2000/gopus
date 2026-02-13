@@ -37,49 +37,51 @@ func (s *ExampleServer) Description() string {
 // The openaiClient parameter provides access to the OpenAI API (may be nil).
 func (s *ExampleServer) Setup(srv *server.MCPServer, openaiClient *openai.ChatClient) error {
 	// Add echo tool - simply echoes back the input
-	srv.AddTool(mcplib.NewTool("echo",
-		mcplib.WithDescription("Echoes back the input message"),
-		mcplib.WithString("message",
-			mcplib.Required(),
-			mcplib.Description("The message to echo back"),
+	srv.AddTool(
+		mcplib.NewTool("echo",
+			mcplib.WithDescription("Echoes back the input message"),
+			mcplib.WithString("message",
+				mcplib.Required(),
+				mcplib.Description("The message to echo back"),
+			),
 		),
-	), echoToolHandler)
+		func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+			message, err := GetRequiredStringArg(req, "message")
+			if err != nil {
+				return nil, err
+			}
+			return mcplib.NewToolResultText(fmt.Sprintf("Echo: %s", message)), nil
+		},
+	)
 
 	// Add current_time tool - returns the current time
-	srv.AddTool(mcplib.NewTool("current_time",
-		mcplib.WithDescription("Returns the current date and time"),
-		mcplib.WithString("format",
-			mcplib.Description("Time format (optional). Use 'unix' for Unix timestamp, 'iso' for ISO 8601, or a Go time format string. Default: RFC3339"),
+	srv.AddTool(
+		mcplib.NewTool("current_time",
+			mcplib.WithDescription("Returns the current date and time"),
+			mcplib.WithString("format",
+				mcplib.Description("Time format (optional). Use 'unix' for Unix timestamp, 'iso' for ISO 8601, or a Go time format string. Default: RFC3339"),
+			),
 		),
-	), currentTimeToolHandler)
+		func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+			now := time.Now()
+
+			args, _ := GetArgs(req)
+			format := GetOptionalStringArg(args, "format", "RFC3339")
+
+			var result string
+			switch format {
+			case "unix":
+				result = fmt.Sprintf("%d", now.Unix())
+			case "iso", "ISO8601", "RFC3339":
+				result = now.Format(time.RFC3339)
+			default:
+
+				result = now.Format(format)
+			}
+
+			return mcplib.NewToolResultText(result), nil
+		},
+	)
 
 	return nil
-}
-
-func echoToolHandler(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	message, err := GetRequiredStringArg(req, "message")
-	if err != nil {
-		return nil, err
-	}
-	return mcplib.NewToolResultText(fmt.Sprintf("Echo: %s", message)), nil
-}
-
-func currentTimeToolHandler(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	now := time.Now()
-
-	args, _ := GetArgs(req)
-	format := GetOptionalStringArg(args, "format", "RFC3339")
-
-	var result string
-	switch format {
-	case "unix":
-		result = fmt.Sprintf("%d", now.Unix())
-	case "iso", "ISO8601", "RFC3339":
-		result = now.Format(time.RFC3339)
-	default:
-
-		result = now.Format(format)
-	}
-
-	return mcplib.NewToolResultText(result), nil
 }
