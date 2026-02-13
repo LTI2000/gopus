@@ -108,21 +108,15 @@ func (c *ChatLoop) processConversation(ctx context.Context, chatHistory *[]opena
 	tools := c.getOpenAITools()
 
 	for {
-		// Send request to OpenAI with spinner
-		resp, err := WithSpinner(func() (*openai.ChatCompletionResponse, error) {
-			return c.client.ChatCompletionWithTools(ctx, *chatHistory, tools)
+		// Send request to OpenAI with spinner and extract first choice
+		choice, err := WithSpinner(func() (*openai.ChatCompletionChoice, error) {
+			return c.client.GetFirstChoice(ctx, *chatHistory, tools)
 		})
 
 		if err != nil {
 			return err
 		}
 
-		// Extract the response
-		if len(resp.Choices) == 0 {
-			return fmt.Errorf("no response from API")
-		}
-
-		choice := resp.Choices[0]
 		message := choice.Message
 
 		// Check if the model wants to call tools
@@ -172,7 +166,7 @@ func (c *ChatLoop) processConversation(ctx context.Context, chatHistory *[]opena
 
 		// No tool calls - this is the final response
 		if message.Content == nil {
-			return fmt.Errorf("empty response from API")
+			return openai.ErrEmptyResponse
 		}
 
 		assistantMessage := *message.Content

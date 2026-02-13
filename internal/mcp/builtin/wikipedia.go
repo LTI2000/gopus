@@ -179,18 +179,5 @@ func generateSummary(ctx context.Context, client *openai.ChatClient, title, cont
 		},
 	}
 
-	resp, err := client.ChatCompletion(ctx, messages)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate summary: %w", err)
-	}
-
-	if len(resp.Choices) == 0 {
-		return "", fmt.Errorf("no response from OpenAI")
-	}
-
-	if resp.Choices[0].Message.Content == nil {
-		return "", fmt.Errorf("empty response from OpenAI")
-	}
-
-	return *resp.Choices[0].Message.Content, nil
+	return client.GetMessageContent(ctx, messages)
 }

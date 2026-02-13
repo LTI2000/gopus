@@ -6,12 +6,16 @@ package openai
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"gopus/internal/config"
 )
+
+// ErrEmptyResponse is returned when the API returns no choices or empty message content.
+var ErrEmptyResponse = errors.New("empty response from API")
 
 // ChatClient wraps the generated OpenAI client with configuration defaults.
 type ChatClient struct {
@@ -112,4 +116,47 @@ func (c *ChatClient) ChatCompletionWithTools(ctx context.Context, messages []Cha
 // Error implements the error interface for APIError.
 func (e *APIError) Error() string {
 	return e.Message
+}
+
+// GetMessageContent is a convenience function that calls ChatCompletion and extracts
+// the message content, handling all cases of empty choices or nil message content.
+// Returns ErrEmptyResponse if the response has no choices or empty content.
+func (c *ChatClient) GetMessageContent(ctx context.Context, messages []ChatCompletionRequestMessage) (string, error) {
+	resp, err := c.ChatCompletion(ctx, messages)
+	if err != nil {
+		return "", err
+	}
+	return ExtractMessageContent(resp)
+}
+
+// ExtractMessageContent extracts the message content from a ChatCompletionResponse.
+// Returns ErrEmptyResponse if the response has no choices or empty content.
+func ExtractMessageContent(resp *ChatCompletionResponse) (string, error) {
+	if len(resp.Choices) == 0 {
+		return "", ErrEmptyResponse
+	}
+	if resp.Choices[0].Message.Content == nil {
+		return "", ErrEmptyResponse
+	}
+	return *resp.Choices[0].Message.Content, nil
+}
+
+// GetFirstChoice is a convenience function that calls ChatCompletionWithTools and extracts
+// the first choice, handling the case of empty choices.
+// Returns ErrEmptyResponse if the response has no choices.
+func (c *ChatClient) GetFirstChoice(ctx context.Context, messages []ChatCompletionRequestMessage, tools []ChatCompletionTool) (*ChatCompletionChoice, error) {
+	resp, err := c.ChatCompletionWithTools(ctx, messages, tools)
+	if err != nil {
+		return nil, err
+	}
+	return ExtractFirstChoice(resp)
+}
+
+// ExtractFirstChoice extracts the first choice from a ChatCompletionResponse.
+// Returns ErrEmptyResponse if the response has no choices.
+func ExtractFirstChoice(resp *ChatCompletionResponse) (*ChatCompletionChoice, error) {
+	if len(resp.Choices) == 0 {
+		return nil, ErrEmptyResponse
+	}
+	return &resp.Choices[0], nil
 }
