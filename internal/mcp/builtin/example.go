@@ -17,6 +17,55 @@ import (
 func init() {
 	// Register the example server with the default registry
 	mcp.DefaultRegistry.Register(&ExampleServer{})
+
+	// Register tools with the default tool registry
+	mcp.DefaultToolRegistry.Register(
+		mcplib.NewTool("echo",
+			mcplib.WithDescription("Echoes back the input message"),
+			mcplib.WithString("message",
+				mcplib.Required(),
+				mcplib.Description("The message to echo back"),
+			),
+		),
+		func(openaiClient *openai.ChatClient) mcp.ToolHandler {
+			return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+				message, err := GetRequiredStringArg(req, "message")
+				if err != nil {
+					return nil, err
+				}
+				return mcplib.NewToolResultText(fmt.Sprintf("Echo: %s", message)), nil
+			}
+		},
+	)
+
+	mcp.DefaultToolRegistry.Register(
+		mcplib.NewTool("current_time",
+			mcplib.WithDescription("Returns the current date and time"),
+			mcplib.WithString("format",
+				mcplib.Description("Time format (optional). Use 'unix' for Unix timestamp, 'iso' for ISO 8601, or a Go time format string. Default: RFC3339"),
+			),
+		),
+		func(openaiClient *openai.ChatClient) mcp.ToolHandler {
+			return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+				now := time.Now()
+
+				args, _ := GetArgs(req)
+				format := GetOptionalStringArg(args, "format", "RFC3339")
+
+				var result string
+				switch format {
+				case "unix":
+					result = fmt.Sprintf("%d", now.Unix())
+				case "iso", "ISO8601", "RFC3339":
+					result = now.Format(time.RFC3339)
+				default:
+					result = now.Format(format)
+				}
+
+				return mcplib.NewToolResultText(result), nil
+			}
+		},
+	)
 }
 
 // ExampleServer is a simple example builtin MCP server.
@@ -75,7 +124,6 @@ func (s *ExampleServer) Setup(srv *server.MCPServer, openaiClient *openai.ChatCl
 			case "iso", "ISO8601", "RFC3339":
 				result = now.Format(time.RFC3339)
 			default:
-
 				result = now.Format(format)
 			}
 
