@@ -183,7 +183,7 @@ func (m *Manager) AddServer(ctx context.Context, id, command string, env []strin
 // this method creates an in-process server that runs within the gopus process.
 // The openaiClient parameter provides access to the OpenAI API for tools that need it
 // (may be nil if no OpenAI client is configured).
-func (m *Manager) AddBuiltinServer(ctx context.Context, builtin BuiltinServer, openaiClient *openai.ChatClient) error {
+func (m *Manager) AddBuiltinServer(ctx context.Context, builtin *BuiltinServer, openaiClient *openai.ChatClient) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

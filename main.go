@@ -115,7 +115,7 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig, openaiClient *
 	}
 
 	totalServers := builtinCount + connectedServers
-	if totalServers == 0 && (len(mcpCfg.Servers) > 0 || mcp.DefaultRegistry.Count() > 0) {
+	if totalServers == 0 && (len(mcpCfg.Servers) > 0 || mcp.DefaultToolRegistry.Count() > 0) {
 		return nil, fmt.Errorf("no MCP servers connected successfully")
 	}
 
@@ -127,26 +127,26 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig, openaiClient *
 	return manager, nil
 }
 
-// initBuiltinServers initializes all enabled builtin MCP servers.
-// The openaiClient is passed to builtin servers that may need OpenAI API access.
+// initBuiltinServers initializes the single builtin MCP server with all registered tools.
+// The openaiClient is passed to the builtin server for tools that need OpenAI API access.
 func initBuiltinServers(ctx context.Context, manager *mcp.Manager, builtinCfg config.BuiltinConfig, openaiClient *openai.ChatClient) int {
-	connectedCount := 0
-
-	for _, builtin := range mcp.DefaultRegistry.All() {
-		// Check if this builtin server is enabled
-		if !builtinCfg.IsServerEnabled(builtin.Name()) {
-			continue
-		}
-
-		// Add the builtin server
-		if err := manager.AddBuiltinServer(ctx, builtin, openaiClient); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to initialize builtin server %q: %v\n", builtin.Name(), err)
-			continue
-		}
-
-		fmt.Printf("Initialized builtin MCP server: %s\n", builtin.Name())
-		connectedCount++
+	// Check if builtin server is enabled
+	if !builtinCfg.IsServerEnabled("builtin") {
+		return 0
 	}
 
-	return connectedCount
+	// Check if there are any tools registered
+	if mcp.DefaultToolRegistry.Count() == 0 {
+		return 0
+	}
+
+	// Create and add the single builtin server
+	builtin := &mcp.BuiltinServer{}
+	if err := manager.AddBuiltinServer(ctx, builtin, openaiClient); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize builtin server: %v\n", err)
+		return 0
+	}
+
+	fmt.Printf("Initialized builtin MCP server: %s (%d tools)\n", builtin.Name(), mcp.DefaultToolRegistry.Count())
+	return 1
 }
