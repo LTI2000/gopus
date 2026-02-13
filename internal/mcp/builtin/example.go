@@ -34,6 +34,16 @@ func (s *ExampleServer) Description() string {
 
 // Setup configures the MCP server with tools.
 func (s *ExampleServer) Setup(srv *server.MCPServer) error {
+	addEchoTool(srv)
+
+	addCurrentTimeTool(srv)
+
+	addWikipediaTool(srv)
+
+	return nil
+}
+
+func addEchoTool(srv *server.MCPServer) {
 	// Add echo tool - simply echoes back the input
 	echoTool := mcplib.NewTool("echo",
 		mcplib.WithDescription("Echoes back the input message"),
@@ -54,7 +64,9 @@ func (s *ExampleServer) Setup(srv *server.MCPServer) error {
 		}
 		return mcplib.NewToolResultText(fmt.Sprintf("Echo: %s", message)), nil
 	})
+}
 
+func addCurrentTimeTool(srv *server.MCPServer) {
 	// Add current_time tool - returns the current time
 	timeTool := mcplib.NewTool("current_time",
 		mcplib.WithDescription("Returns the current date and time"),
@@ -86,6 +98,30 @@ func (s *ExampleServer) Setup(srv *server.MCPServer) error {
 
 		return mcplib.NewToolResultText(result), nil
 	})
+}
 
-	return nil
+func addWikipediaTool(srv *server.MCPServer) {
+	// Add echo tool - simply echoes back the input
+	wikipediaTool := mcplib.NewTool("search_wikipedia",
+		mcplib.WithDescription("Search Wikipedia for a topic and return a summary"),
+		mcplib.WithString("query",
+			mcplib.Required(),
+			mcplib.Description("The search query"),
+		),
+	)
+
+	srv.AddTool(wikipediaTool, func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+		args, ok := req.Params.Arguments.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid arguments format")
+		}
+		query, ok := args["query"].(string)
+		if !ok {
+			return nil, fmt.Errorf("query argument is required and must be a string")
+		}
+		// --- Real API logic would go here ---
+		// For this example, we return a mock summary.
+		summary := fmt.Sprintf("Summary for %s: This is a simulated Wikipedia article.", query)
+		return mcplib.NewToolResultText(summary), nil
+	})
 }
