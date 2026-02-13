@@ -14,6 +14,8 @@ import (
 	"github.com/mark3labs/mcp-go/client/transport"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+
+	"gopus/internal/openai"
 )
 
 // DebugTransport wraps a transport.Interface to log JSON-RPC messages.
@@ -179,7 +181,9 @@ func (m *Manager) AddServer(ctx context.Context, id, command string, env []strin
 // AddBuiltinServer registers an in-process MCP server.
 // Unlike AddServer which connects to external processes via stdio,
 // this method creates an in-process server that runs within the gopus process.
-func (m *Manager) AddBuiltinServer(ctx context.Context, builtin BuiltinServer) error {
+// The openaiClient parameter provides access to the OpenAI API for tools that need it
+// (may be nil if no OpenAI client is configured).
+func (m *Manager) AddBuiltinServer(ctx context.Context, builtin BuiltinServer, openaiClient *openai.ChatClient) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -198,7 +202,7 @@ func (m *Manager) AddBuiltinServer(ctx context.Context, builtin BuiltinServer) e
 	)
 
 	// Let the builtin server configure itself (add tools, resources, etc.)
-	if err := builtin.Setup(srv); err != nil {
+	if err := builtin.Setup(srv, openaiClient); err != nil {
 		return fmt.Errorf("failed to setup builtin server %s: %w", id, err)
 	}
 

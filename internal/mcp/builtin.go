@@ -4,6 +4,8 @@ import (
 	"sync"
 
 	"github.com/mark3labs/mcp-go/server"
+
+	"gopus/internal/openai"
 )
 
 // BuiltinServer defines the interface for in-process MCP servers.
@@ -20,7 +22,9 @@ type BuiltinServer interface {
 	// Setup configures the MCP server with tools, resources, prompts, etc.
 	// This is called once when the server is registered with the Manager.
 	// The server should add its tools using srv.AddTool() and similar methods.
-	Setup(srv *server.MCPServer) error
+	// The openaiClient parameter provides access to the OpenAI API for tools
+	// that need it (may be nil if no OpenAI client is configured).
+	Setup(srv *server.MCPServer, openaiClient *openai.ChatClient) error
 }
 
 // Registry holds all available builtin servers.

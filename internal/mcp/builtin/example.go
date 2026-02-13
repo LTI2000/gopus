@@ -11,6 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	"gopus/internal/mcp"
+	"gopus/internal/openai"
 )
 
 func init() {
@@ -33,7 +34,11 @@ func (s *ExampleServer) Description() string {
 }
 
 // Setup configures the MCP server with tools.
-func (s *ExampleServer) Setup(srv *server.MCPServer) error {
+// The openaiClient parameter provides access to the OpenAI API (may be nil).
+func (s *ExampleServer) Setup(srv *server.MCPServer, openaiClient *openai.ChatClient) error {
+	// Note: openaiClient is available here for tools that need OpenAI API access.
+	// This example server doesn't use it, but other builtin servers can.
+	_ = openaiClient
 	// Add echo tool - simply echoes back the input
 	srv.AddTool(mcplib.NewTool("echo",
 		mcplib.WithDescription("Echoes back the input message"),

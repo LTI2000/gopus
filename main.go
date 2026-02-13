@@ -58,7 +58,7 @@ func main0(ctx context.Context) {
 	}
 
 	// Initialize MCP manager
-	mcpManager, err := initMCPManager(ctx, cfg.MCP)
+	mcpManager, err := initMCPManager(ctx, cfg.MCP, client)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP manager: %v\n", err)
 		// Continue without MCP support
@@ -79,7 +79,8 @@ func main0(ctx context.Context) {
 }
 
 // initMCPManager creates and initializes the MCP manager with configured servers.
-func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager, error) {
+// The openaiClient is passed to builtin servers that may need OpenAI API access.
+func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig, openaiClient *openai.ChatClient) (*mcp.Manager, error) {
 	// Create the MCP manager with optional debug logging
 	manager := mcp.NewManagerWithDebug(mcpCfg.Debug)
 
@@ -88,7 +89,7 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager,
 	}
 
 	// Initialize builtin servers first
-	builtinCount := initBuiltinServers(ctx, manager, mcpCfg.Builtin)
+	builtinCount := initBuiltinServers(ctx, manager, mcpCfg.Builtin, openaiClient)
 
 	// Connect to each enabled external server
 	connectedServers := 0
@@ -127,7 +128,8 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager,
 }
 
 // initBuiltinServers initializes all enabled builtin MCP servers.
-func initBuiltinServers(ctx context.Context, manager *mcp.Manager, builtinCfg config.BuiltinConfig) int {
+// The openaiClient is passed to builtin servers that may need OpenAI API access.
+func initBuiltinServers(ctx context.Context, manager *mcp.Manager, builtinCfg config.BuiltinConfig, openaiClient *openai.ChatClient) int {
 	connectedCount := 0
 
 	for _, builtin := range mcp.DefaultRegistry.All() {
@@ -137,7 +139,7 @@ func initBuiltinServers(ctx context.Context, manager *mcp.Manager, builtinCfg co
 		}
 
 		// Add the builtin server
-		if err := manager.AddBuiltinServer(ctx, builtin); err != nil {
+		if err := manager.AddBuiltinServer(ctx, builtin, openaiClient); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Failed to initialize builtin server %q: %v\n", builtin.Name(), err)
 			continue
 		}
