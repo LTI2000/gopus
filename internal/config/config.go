@@ -48,6 +48,7 @@ type MCPConfig struct {
 	DefaultTimeout   int               `yaml:"default_timeout"`   // Timeout in seconds for MCP requests
 	Debug            bool              `yaml:"debug"`             // Enable debug logging for JSON-RPC messages
 	Servers          []MCPServerConfig `yaml:"servers"`           // List of MCP servers to connect to
+	Builtin          BuiltinConfig     `yaml:"builtin"`           // Configuration for builtin in-process servers
 }
 
 // MCPServerConfig defines an MCP server connection.
@@ -58,6 +59,45 @@ type MCPServerConfig struct {
 	Env     map[string]string `yaml:"env"`      // Additional environment variables
 	WorkDir string            `yaml:"work_dir"` // Working directory for the command
 	Enabled bool              `yaml:"enabled"`  // Enable/disable this server
+}
+
+// BuiltinConfig contains settings for builtin in-process MCP servers.
+type BuiltinConfig struct {
+	// Enabled lists specific builtin server names to enable.
+	// If empty, all registered builtin servers are enabled (unless in Disabled).
+	Enabled []string `yaml:"enabled"`
+
+	// Disabled lists specific builtin server names to disable.
+	// Takes precedence over Enabled.
+	Disabled []string `yaml:"disabled"`
+}
+
+// IsServerEnabled checks if a builtin server should be enabled based on config.
+// Logic:
+// - If server is in Disabled list, return false
+// - If Enabled list is empty, return true (all enabled by default)
+// - If Enabled list is non-empty, return true only if server is in the list
+func (b *BuiltinConfig) IsServerEnabled(name string) bool {
+	// Check disabled list first (takes precedence)
+	for _, disabled := range b.Disabled {
+		if disabled == name {
+			return false
+		}
+	}
+
+	// If enabled list is empty, all servers are enabled by default
+	if len(b.Enabled) == 0 {
+		return true
+	}
+
+	// Check if server is in enabled list
+	for _, enabled := range b.Enabled {
+		if enabled == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ToolConfirmation constants

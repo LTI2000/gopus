@@ -75,7 +75,22 @@ mcp:
   # When enabled, all MCP protocol messages will be logged to stderr
   debug: false
   
-  # List of MCP servers to connect to (optional)
+  # Builtin MCP servers configuration (optional)
+  # Builtin servers run in-process and don't require external commands.
+  # Available builtin servers:
+  #   - "example": Demo server with echo and current_time tools
+  builtin:
+    # List of builtin server names to enable (optional)
+    # If empty, all registered builtin servers are enabled by default.
+    # enabled:
+    #   - "example"
+    
+    # List of builtin server names to disable (optional)
+    # Takes precedence over the enabled list.
+    disabled:
+      - "example"  # Disable the example server by default
+  
+  # List of external MCP servers to connect to (optional)
   servers:
     # Example: Filesystem access server
     # - name: "filesystem"

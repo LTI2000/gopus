@@ -13,6 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/client/transport"
 	mcplib "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 // DebugTransport wraps a transport.Interface to log JSON-RPC messages.
@@ -94,26 +95,29 @@ type ToolInfo struct {
 
 // Manager manages multiple MCP server connections.
 type Manager struct {
-	mu      sync.RWMutex
-	clients map[string]*client.Client
-	tools   map[string]ToolInfo // tool name -> tool info
-	debug   bool                // Enable debug logging for JSON-RPC messages
+	mu             sync.RWMutex
+	clients        map[string]*client.Client
+	tools          map[string]ToolInfo          // tool name -> tool info
+	debug          bool                         // Enable debug logging for JSON-RPC messages
+	builtinServers map[string]*server.MCPServer // Track in-process servers for cleanup
 }
 
 // NewManager creates a new MCP manager.
 func NewManager() *Manager {
 	return &Manager{
-		clients: make(map[string]*client.Client),
-		tools:   make(map[string]ToolInfo),
+		clients:        make(map[string]*client.Client),
+		tools:          make(map[string]ToolInfo),
+		builtinServers: make(map[string]*server.MCPServer),
 	}
 }
 
 // NewManagerWithDebug creates a new MCP manager with debug logging enabled.
 func NewManagerWithDebug(debug bool) *Manager {
 	return &Manager{
-		clients: make(map[string]*client.Client),
-		tools:   make(map[string]ToolInfo),
-		debug:   debug,
+		clients:        make(map[string]*client.Client),
+		tools:          make(map[string]ToolInfo),
+		builtinServers: make(map[string]*server.MCPServer),
+		debug:          debug,
 	}
 }
 
@@ -166,6 +170,74 @@ func (m *Manager) AddServer(ctx context.Context, id, command string, env []strin
 	// Fetch and register tools
 	if err := m.fetchTools(ctx, id, c); err != nil {
 		// Non-fatal: server might not support tools
+		// Log but continue
+	}
+
+	return nil
+}
+
+// AddBuiltinServer registers an in-process MCP server.
+// Unlike AddServer which connects to external processes via stdio,
+// this method creates an in-process server that runs within the gopus process.
+func (m *Manager) AddBuiltinServer(ctx context.Context, builtin BuiltinServer) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	id := builtin.Name()
+
+	// Check if server already exists
+	if _, exists := m.clients[id]; exists {
+		return fmt.Errorf("server %s already exists", id)
+	}
+
+	// Create the MCP server
+	srv := server.NewMCPServer(
+		id,
+		"1.0.0",
+		server.WithToolCapabilities(true),
+	)
+
+	// Let the builtin server configure itself (add tools, resources, etc.)
+	if err := builtin.Setup(srv); err != nil {
+		return fmt.Errorf("failed to setup builtin server %s: %w", id, err)
+	}
+
+	// Create in-process transport
+	inProcessTransport := transport.NewInProcessTransport(srv)
+	if err := inProcessTransport.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start in-process transport for %s: %w", id, err)
+	}
+
+	// Optionally wrap with debug transport
+	var c *client.Client
+	if m.debug {
+		debugTransport := NewDebugTransport(inProcessTransport, id)
+		c = client.NewClient(debugTransport)
+	} else {
+		c = client.NewClient(inProcessTransport)
+	}
+
+	// Initialize the client
+	initRequest := mcplib.InitializeRequest{}
+	initRequest.Params.ProtocolVersion = mcplib.LATEST_PROTOCOL_VERSION
+	initRequest.Params.ClientInfo = mcplib.Implementation{
+		Name:    "gopus",
+		Version: "1.0.0",
+	}
+
+	_, err := c.Initialize(ctx, initRequest)
+	if err != nil {
+		c.Close()
+		return fmt.Errorf("failed to initialize builtin server %s: %w", id, err)
+	}
+
+	// Store the client and server
+	m.clients[id] = c
+	m.builtinServers[id] = srv
+
+	// Fetch and register tools
+	if err := m.fetchTools(ctx, id, c); err != nil {
+		// Non-fatal: server might not have tools yet
 		// Log but continue
 	}
 
@@ -292,6 +364,7 @@ func (m *Manager) Close() error {
 
 	m.clients = make(map[string]*client.Client)
 	m.tools = make(map[string]ToolInfo)
+	m.builtinServers = make(map[string]*server.MCPServer)
 
 	if len(errs) > 0 {
 		return errs[0]

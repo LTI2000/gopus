@@ -13,6 +13,9 @@ import (
 	"gopus/internal/mcp"
 	"gopus/internal/openai"
 	"gopus/internal/signal"
+
+	// Import builtin package for side effects (registers builtin servers)
+	_ "gopus/internal/mcp/builtin"
 )
 
 func main() {
@@ -84,7 +87,10 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager,
 		fmt.Fprintln(os.Stderr, "MCP debug logging enabled - JSON-RPC messages will be displayed")
 	}
 
-	// Connect to each enabled server
+	// Initialize builtin servers first
+	builtinCount := initBuiltinServers(ctx, manager, mcpCfg.Builtin)
+
+	// Connect to each enabled external server
 	connectedServers := 0
 	for _, serverCfg := range mcpCfg.Servers {
 		if !serverCfg.Enabled {
@@ -107,14 +113,38 @@ func initMCPManager(ctx context.Context, mcpCfg config.MCPConfig) (*mcp.Manager,
 		connectedServers++
 	}
 
-	if connectedServers == 0 && len(mcpCfg.Servers) > 0 {
+	totalServers := builtinCount + connectedServers
+	if totalServers == 0 && (len(mcpCfg.Servers) > 0 || mcp.DefaultRegistry.Count() > 0) {
 		return nil, fmt.Errorf("no MCP servers connected successfully")
 	}
 
-	if connectedServers > 0 {
-		fmt.Printf("MCP: %d server(s) connected, %d tool(s) available\n",
-			connectedServers, manager.ToolCount())
+	if totalServers > 0 {
+		fmt.Printf("MCP: %d server(s) connected (%d builtin, %d external), %d tool(s) available\n",
+			totalServers, builtinCount, connectedServers, manager.ToolCount())
 	}
 
 	return manager, nil
+}
+
+// initBuiltinServers initializes all enabled builtin MCP servers.
+func initBuiltinServers(ctx context.Context, manager *mcp.Manager, builtinCfg config.BuiltinConfig) int {
+	connectedCount := 0
+
+	for _, builtin := range mcp.DefaultRegistry.All() {
+		// Check if this builtin server is enabled
+		if !builtinCfg.IsServerEnabled(builtin.Name()) {
+			continue
+		}
+
+		// Add the builtin server
+		if err := manager.AddBuiltinServer(ctx, builtin); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to initialize builtin server %q: %v\n", builtin.Name(), err)
+			continue
+		}
+
+		fmt.Printf("Initialized builtin MCP server: %s\n", builtin.Name())
+		connectedCount++
+	}
+
+	return connectedCount
 }

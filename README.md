@@ -152,16 +152,18 @@ gopus/
 ├── docs/
 │   └── dependency-diagram.md  # Package dependency diagram
 ├── internal/
+│   ├── animator/      # Animation utilities
 │   ├── canvas/        # Braille-based drawing canvas
-│   ├── chat/          # Chat loop and commands
+│   ├── chat/          # Chat loop, commands, and spinner
 │   ├── config/        # Configuration loading
 │   ├── history/       # Session management and storage
 │   ├── mcp/           # MCP client for external tools
+│   │   └── builtin/   # Builtin in-process MCP servers
 │   ├── openai/        # API client (oapi-codegen generated)
 │   ├── printer/       # Output formatting
 │   ├── signal/        # Signal handling
-│   ├── spinner/       # Loading spinner (uses canvas)
-│   └── summarize/     # Tiered summarization
+│   ├── summarize/     # Tiered summarization
+│   └── table/         # Table formatting utilities
 └── plans/             # Architecture documentation
 ```
 
@@ -172,16 +174,17 @@ See [`docs/dependency-diagram.md`](docs/dependency-diagram.md) for the full pack
 | Package | Purpose | Key Types |
 |---------|---------|-----------|
 | **main** | Application entry point, orchestrates startup | - |
-| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig`, `MCPConfig` |
-| **openai** | OpenAI API client (generated via oapi-codegen) | `ChatClient`, `ChatCompletionRequestMessage` |
-| **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
-| **chat** | Interactive chat loop with slash commands | `ChatLoop` |
-| **mcp** | MCP client for external tool integration | `Client`, `Registry`, `Tool`, `Transport` |
-| **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
+| **animator** | Animation utilities | `Animator` |
 | **canvas** | Braille-based terminal drawing canvas | `Canvas` |
+| **chat** | Interactive chat loop with slash commands and spinner | `ChatLoop`, `WithSpinner()` |
+| **config** | YAML configuration loading with defaults | `Config`, `OpenAIConfig`, `SummarizationConfig`, `MCPConfig`, `BuiltinConfig` |
+| **history** | Persistent session management with JSON storage | `Manager`, `Session`, `Message`, `Role` |
+| **mcp** | MCP client for external tool integration | `Manager`, `ToolInfo`, `BuiltinServer`, `Registry` |
+| **openai** | OpenAI API client (generated via oapi-codegen) | `ChatClient`, `ChatCompletionRequestMessage` |
 | **printer** | ANSI-colored terminal output | `PrintMessage()`, `PrintError()` |
-| **spinner** | Animated loading indicator (uses canvas) | `Spinner` |
 | **signal** | OS signal handling for graceful shutdown | `RunWithContext()` |
+| **summarize** | Tiered message summarization (condensed → compressed) | `Summarizer`, `TierClassification`, `Stats` |
+| **table** | Table formatting utilities | `Table` |
 
 ## Development
 
